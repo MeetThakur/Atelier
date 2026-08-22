@@ -66,11 +66,22 @@ export default function App() {
   const [modalOpen, setModalOpen] = useState(false);
   const [sortMode, setSortMode] = useState<SortMode>('newest');
 
+  const [ready, setReady] = useState(false);
+
   useEffect(() => {
     if (fontsLoaded || fontError) {
+      setReady(true);
       SplashScreen.hideAsync().catch(() => {});
     }
   }, [fontsLoaded, fontError]);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setReady(true);
+      SplashScreen.hideAsync().catch(() => {});
+    }, 2500);
+    return () => clearTimeout(timeout);
+  }, []);
 
   const today = todayISO();
 
@@ -123,7 +134,7 @@ export default function App() {
     ]);
   };
 
-  if (!fontsLoaded && !fontError) {
+  if (!ready && !fontsLoaded && !fontError) {
     return null;
   }
 
