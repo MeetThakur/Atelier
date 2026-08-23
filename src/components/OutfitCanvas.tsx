@@ -707,13 +707,14 @@ export function OutfitCanvas({ items }: Props) {
             />
           </Pressable>
 
-          {/* Saved Looks Collection */}
+          {/* Saved Looks Collection (Lookbook Archive) */}
           <Pressable
+            accessibilityLabel="View saved looks collection"
             onPress={() => setShowSavedModal(true)}
             hitSlop={6}
             style={({ pressed }) => [styles.headerIconBtn, pressed && styles.pressed]}
           >
-            <Ionicons name="bookmark-outline" size={15} color={c.onSurface} />
+            <Ionicons name="albums-outline" size={16} color={c.onSurface} />
             {savedOutfits.length > 0 && (
               <View style={styles.savedBadge}>
                 <Text style={styles.savedBadgeText}>{savedOutfits.length}</Text>
@@ -721,9 +722,10 @@ export function OutfitCanvas({ items }: Props) {
             )}
           </Pressable>
 
-          {/* Save Look Action */}
+          {/* Save Look Action (Save current canvas) */}
           {canvasPieces.length > 0 && (
             <Pressable
+              accessibilityLabel="Save current styled look"
               onPress={() => setShowSavePrompt(true)}
               hitSlop={6}
               style={({ pressed }) => [styles.headerIconBtn, styles.headerSaveIconBtn, pressed && styles.pressed]}
