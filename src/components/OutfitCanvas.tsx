@@ -872,26 +872,39 @@ export function OutfitCanvas({ items }: Props) {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.drawerCategoryRow}
             >
-              {categories.map((cat) => (
-                <Pressable
-                  key={cat}
-                  onPress={() => setDrawerCategory(cat)}
-                  hitSlop={4}
-                  style={[
-                    styles.drawerCatChip,
-                    drawerCategory === cat && styles.drawerCatChipActive,
-                  ]}
-                >
-                  <Text
+              {categories.map((cat) => {
+                const isSelected = drawerCategory === cat;
+                const dotColor = {
+                  All: c.gold,
+                  Tops: c.catTops,
+                  Bottoms: c.catBottoms,
+                  Dresses: c.catDresses,
+                  Shoes: c.catShoes,
+                  Accessories: c.catAccessories,
+                }[cat];
+
+                return (
+                  <Pressable
+                    key={cat}
+                    onPress={() => setDrawerCategory(cat)}
+                    hitSlop={4}
                     style={[
-                      styles.drawerCatText,
-                      drawerCategory === cat && styles.drawerCatTextActive,
+                      styles.drawerCatChip,
+                      isSelected && styles.drawerCatChipActive,
                     ]}
                   >
-                    {cat}
-                  </Text>
-                </Pressable>
-              ))}
+                    <View style={[styles.drawerDot, { backgroundColor: dotColor }]} />
+                    <Text
+                      style={[
+                        styles.drawerCatText,
+                        isSelected && styles.drawerCatTextActive,
+                      ]}
+                    >
+                      {cat}
+                    </Text>
+                  </Pressable>
+                );
+              })}
             </ScrollView>
 
             {/* Pieces Horizontal Tray */}
@@ -1451,6 +1464,9 @@ const makeStyles = (c: Palette) =>
       paddingVertical: 6,
     },
     drawerCatChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
       paddingHorizontal: 12,
       paddingVertical: 5,
       borderRadius: shapes.full,
@@ -1461,6 +1477,11 @@ const makeStyles = (c: Palette) =>
     drawerCatChipActive: {
       backgroundColor: c.primary,
       borderColor: c.primary,
+    },
+    drawerDot: {
+      width: 5,
+      height: 5,
+      borderRadius: 2.5,
     },
     drawerCatText: {
       fontFamily: fonts.semiBold,

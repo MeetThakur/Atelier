@@ -221,6 +221,13 @@ function AddItemSheet({ visible, onClose, onAdd }: Props) {
                 {clothingCategories.map((cat) => {
                   const isSelected = cat === category;
                   const iconName = CATEGORY_ICONS[cat];
+                  const catColor = {
+                    Tops: { color: c.catTops, bg: c.catTopsBg },
+                    Bottoms: { color: c.catBottoms, bg: c.catBottomsBg },
+                    Dresses: { color: c.catDresses, bg: c.catDressesBg },
+                    Shoes: { color: c.catShoes, bg: c.catShoesBg },
+                    Accessories: { color: c.catAccessories, bg: c.catAccessoriesBg },
+                  }[cat];
 
                   return (
                     <Pressable
@@ -228,20 +235,22 @@ function AddItemSheet({ visible, onClose, onAdd }: Props) {
                       onPress={() => handleCategorySelect(cat)}
                       style={({ pressed }) => [
                         styles.categoryTile,
-                        isSelected ? styles.categoryTileSelected : styles.categoryTileUnselected,
+                        isSelected
+                          ? { backgroundColor: catColor.bg, borderColor: catColor.color }
+                          : styles.categoryTileUnselected,
                         pressed && styles.pressed,
                       ]}
                     >
                       <Ionicons
                         name={iconName}
                         size={18}
-                        color={isSelected ? c.onSecondaryContainer : c.onSurfaceVariant}
+                        color={isSelected ? catColor.color : c.onSurfaceVariant}
                       />
                       <Text
                         style={[
                           styles.categoryTileText,
                           isSelected
-                            ? styles.categoryTileTextSelected
+                            ? [styles.categoryTileTextSelected, { color: catColor.color }]
                             : styles.categoryTileTextUnselected,
                         ]}
                       >

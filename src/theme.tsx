@@ -77,6 +77,18 @@ export const light = {
   outlineVariant: '#EAE4D8',
   scrim: 'rgba(18, 16, 14, 0.48)',
   glass: 'rgba(255, 255, 255, 0.85)',
+
+  // Haute Couture Category Color Tokens
+  catTops: '#2D6A4F',
+  catTopsBg: '#EAF4EF',
+  catBottoms: '#BA4A38',
+  catBottomsBg: '#FCEFEB',
+  catDresses: '#6B4C76',
+  catDressesBg: '#F3EDF5',
+  catShoes: '#A2592B',
+  catShoesBg: '#FBF1E8',
+  catAccessories: '#B8860B',
+  catAccessoriesBg: '#FBF5E6',
 } as const;
 
 // Haute Editorial Dark Palette (Obsidian Velvet + Elevated Studio Card + Warm Ivory + Pale Gold)
@@ -126,6 +138,18 @@ export const dark = {
   outlineVariant: '#26252F',
   scrim: 'rgba(0, 0, 0, 0.72)',
   glass: 'rgba(22, 21, 28, 0.85)',
+
+  // Haute Couture Category Color Tokens (Dark)
+  catTops: '#52B788',
+  catTopsBg: '#132A20',
+  catBottoms: '#E07A5F',
+  catBottomsBg: '#2E1712',
+  catDresses: '#B288C0',
+  catDressesBg: '#26162B',
+  catShoes: '#DE9B72',
+  catShoesBg: '#2D1D13',
+  catAccessories: '#E6C594',
+  catAccessoriesBg: '#302615',
 } as const;
 
 export type Palette = { [K in keyof typeof light]: string };

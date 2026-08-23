@@ -261,8 +261,36 @@ function ItemDetailSheet({
                 <>
                   {/* Pills Row */}
                   <View style={styles.pillsRow}>
-                    <View style={styles.categoryBadge}>
-                      <Text style={styles.categoryBadgeText}>{item.category}</Text>
+                    <View
+                      style={[
+                        styles.categoryBadge,
+                        {
+                          backgroundColor: {
+                            Tops: c.catTopsBg,
+                            Bottoms: c.catBottomsBg,
+                            Dresses: c.catDressesBg,
+                            Shoes: c.catShoesBg,
+                            Accessories: c.catAccessoriesBg,
+                          }[item.category],
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.categoryBadgeText,
+                          {
+                            color: {
+                              Tops: c.catTops,
+                              Bottoms: c.catBottoms,
+                              Dresses: c.catDresses,
+                              Shoes: c.catShoes,
+                              Accessories: c.catAccessories,
+                            }[item.category],
+                          },
+                        ]}
+                      >
+                        {item.category}
+                      </Text>
                     </View>
 
                     {item.season && item.season !== 'All-Season' && (
@@ -270,7 +298,7 @@ function ItemDetailSheet({
                         <Ionicons
                           name={SEASON_ICONS[item.season] || 'sparkles-outline'}
                           size={12}
-                          color={c.onSurfaceVariant}
+                          color={c.gold}
                         />
                         <Text style={styles.seasonPillText}>{item.season}</Text>
                       </View>

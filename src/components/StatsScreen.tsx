@@ -224,12 +224,19 @@ export function StatsScreen({ items }: Props) {
             const count = categoryCounts[cat];
             const percent = totalItems > 0 ? Math.round((count / totalItems) * 100) : 0;
             const iconName = CATEGORY_ICONS[cat];
+            const catColors = {
+              Tops: { color: c.catTops, bg: c.catTopsBg },
+              Bottoms: { color: c.catBottoms, bg: c.catBottomsBg },
+              Dresses: { color: c.catDresses, bg: c.catDressesBg },
+              Shoes: { color: c.catShoes, bg: c.catShoesBg },
+              Accessories: { color: c.catAccessories, bg: c.catAccessoriesBg },
+            }[cat];
 
             return (
               <View key={cat} style={styles.categoryRow}>
                 <View style={styles.categoryInfo}>
-                  <View style={styles.categoryIconWrap}>
-                    <Ionicons name={iconName} size={15} color={c.onSurface} />
+                  <View style={[styles.categoryIconWrap, { backgroundColor: catColors.bg }]}>
+                    <Ionicons name={iconName} size={15} color={catColors.color} />
                   </View>
                   <Text style={styles.categoryName}>{cat}</Text>
                 </View>
@@ -241,7 +248,7 @@ export function StatsScreen({ items }: Props) {
                         styles.progressBar,
                         {
                           width: `${Math.max(percent, 6)}%`,
-                          backgroundColor: c.primary,
+                          backgroundColor: catColors.color,
                         },
                       ]}
                     />
@@ -249,7 +256,7 @@ export function StatsScreen({ items }: Props) {
                 </View>
 
                 <View style={styles.categoryCountWrap}>
-                  <Text style={styles.categoryCount}>{count}</Text>
+                  <Text style={[styles.categoryCount, count > 0 && { color: catColors.color }]}>{count}</Text>
                   <Text style={styles.categoryPercent}>({percent}%)</Text>
                 </View>
               </View>
@@ -270,10 +277,19 @@ export function StatsScreen({ items }: Props) {
           {seasons.map((s) => {
             const count = seasonCounts[s];
             const iconName = SEASON_ICONS[s];
+            const seasonAccent = {
+              'All-Season': c.gold,
+              Spring: '#3B8A5A',
+              Summer: '#E08700',
+              Fall: '#BA4A38',
+              Winter: '#3077C6',
+            }[s];
 
             return (
-              <View key={s} style={styles.seasonCard}>
-                <Ionicons name={iconName} size={18} color={c.gold} style={styles.seasonIcon} />
+              <View key={s} style={[styles.seasonCard, count > 0 && { borderColor: seasonAccent + '40' }]}>
+                <View style={[styles.seasonIconWrap, { backgroundColor: seasonAccent + '18' }]}>
+                  <Ionicons name={iconName} size={18} color={seasonAccent} />
+                </View>
                 <Text style={styles.seasonCardCount}>{count}</Text>
                 <Text style={styles.seasonCardName}>{s}</Text>
               </View>
@@ -548,8 +564,13 @@ const makeStyles = (c: Palette) =>
       shadowOffset: { width: 0, height: 1 },
       elevation: 1,
     },
-    seasonIcon: {
-      marginBottom: 6,
+    seasonIconWrap: {
+      width: 34,
+      height: 34,
+      borderRadius: 17,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 8,
     },
     seasonCardCount: {
       fontFamily: fonts.displayBold,

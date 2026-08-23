@@ -36,7 +36,7 @@ export function BottomNavBar({ activeTab, onTabChange }: Props) {
           <Ionicons
             name={activeTab === 'archive' ? 'grid' : 'grid-outline'}
             size={16}
-            color={activeTab === 'archive' ? c.onPrimary : c.onSurfaceVariant}
+            color={activeTab === 'archive' ? c.gold : c.onSurfaceVariant}
           />
           <Text
             style={[
@@ -59,7 +59,7 @@ export function BottomNavBar({ activeTab, onTabChange }: Props) {
           <Ionicons
             name={activeTab === 'canvas' ? 'color-palette' : 'color-palette-outline'}
             size={16}
-            color={activeTab === 'canvas' ? c.onPrimary : c.onSurfaceVariant}
+            color={activeTab === 'canvas' ? c.gold : c.onSurfaceVariant}
           />
           <Text
             style={[
@@ -82,7 +82,7 @@ export function BottomNavBar({ activeTab, onTabChange }: Props) {
           <Ionicons
             name={activeTab === 'stats' ? 'stats-chart' : 'stats-chart-outline'}
             size={16}
-            color={activeTab === 'stats' ? c.onPrimary : c.onSurfaceVariant}
+            color={activeTab === 'stats' ? c.gold : c.onSurfaceVariant}
           />
           <Text
             style={[

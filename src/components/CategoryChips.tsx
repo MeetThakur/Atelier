@@ -31,6 +31,14 @@ export function CategoryChips({ value, onChange, counts }: Props) {
         {categories.map((item) => {
           const isSelected = item === value;
           const count = counts ? counts[item] : undefined;
+          const dotColor = {
+            All: c.gold,
+            Tops: c.catTops,
+            Bottoms: c.catBottoms,
+            Dresses: c.catDresses,
+            Shoes: c.catShoes,
+            Accessories: c.catAccessories,
+          }[item];
 
           return (
             <Pressable
@@ -43,7 +51,13 @@ export function CategoryChips({ value, onChange, counts }: Props) {
                 pressed && styles.pressed,
               ]}
             >
-              {isSelected && <View style={styles.activeDot} />}
+              <View
+                style={[
+                  styles.activeDot,
+                  { backgroundColor: dotColor },
+                  isSelected && styles.activeDotSelected,
+                ]}
+              />
               <Text
                 style={[
                   styles.chipText,
@@ -112,10 +126,16 @@ const makeStyles = (c: Palette) =>
       borderColor: c.outlineVariant,
     },
     activeDot: {
-      width: 4,
-      height: 4,
-      borderRadius: 2,
-      backgroundColor: c.gold,
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+    },
+    activeDotSelected: {
+      width: 7,
+      height: 7,
+      borderRadius: 3.5,
+      borderWidth: 1,
+      borderColor: '#FFFFFF',
     },
     chipText: {
       fontSize: 13.5,

@@ -120,6 +120,39 @@ export const ItemCard = memo(function ItemCard({
           <Ionicons name="heart" size={64} color="#E0534C" style={styles.heartForeground} />
         </Animated.View>
 
+        {/* Category Pill Tag */}
+        <View
+          style={[
+            styles.categoryPill,
+            {
+              backgroundColor: {
+                Tops: c.catTopsBg,
+                Bottoms: c.catBottomsBg,
+                Dresses: c.catDressesBg,
+                Shoes: c.catShoesBg,
+                Accessories: c.catAccessoriesBg,
+              }[item.category],
+            },
+          ]}
+        >
+          <Text
+            style={[
+              styles.categoryPillText,
+              {
+                color: {
+                  Tops: c.catTops,
+                  Bottoms: c.catBottoms,
+                  Dresses: c.catDresses,
+                  Shoes: c.catShoes,
+                  Accessories: c.catAccessories,
+                }[item.category],
+              },
+            ]}
+          >
+            {item.category}
+          </Text>
+        </View>
+
         {/* Corner Favorite Button Indicator */}
         <Pressable
           onPress={(e) => {
@@ -230,6 +263,21 @@ const makeStyles = (c: Palette) =>
     },
     heartForeground: {
       position: 'relative',
+    },
+    categoryPill: {
+      position: 'absolute',
+      top: 10,
+      left: 10,
+      paddingHorizontal: 7,
+      paddingVertical: 2.5,
+      borderRadius: shapes.full,
+      zIndex: 2,
+    },
+    categoryPillText: {
+      fontFamily: fonts.bold,
+      fontSize: 9.5,
+      letterSpacing: 0.2,
+      includeFontPadding: false,
     },
     cornerFavoriteBtn: {
       position: 'absolute',
