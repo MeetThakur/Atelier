@@ -22,8 +22,7 @@
           "backgroundColor": "#FAF8F5"
         }
       ],
-      "expo-font",
-      "expo-sharing"
+      "expo-font"
     ]
   }
 }
