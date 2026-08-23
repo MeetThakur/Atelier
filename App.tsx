@@ -51,6 +51,8 @@ function AtelierApp() {
     toggleFavorite,
     addItem,
     removeItem,
+    updateItem,
+    logWorn,
   } = useCloset();
 
   const [activeTab, setActiveTab] = useState<AppTab>('archive');
@@ -281,6 +283,8 @@ function AtelierApp() {
         onClose={() => setSelectedItem(null)}
         onToggleFavorite={toggleFavorite}
         onRemove={removeItem}
+        onUpdate={updateItem}
+        onLogWorn={logWorn}
       />
 
       <ItemActionSheet

@@ -62,6 +62,30 @@ export function useCloset() {
     deleteStoredImage(item.image);
   }, []);
 
+  const updateItem = useCallback(
+    (id: string, updates: Partial<Omit<Item, 'id' | 'image'>>) => {
+      setItems((current) =>
+        current.map((item) => (item.id === id ? { ...item, ...updates } : item))
+      );
+    },
+    []
+  );
+
+  const logWorn = useCallback((id: string) => {
+    const today = new Date().toISOString().split('T')[0];
+    setItems((current) =>
+      current.map((item) => {
+        if (item.id !== id) return item;
+        const currentCount = item.wearCount || 0;
+        return {
+          ...item,
+          wearCount: currentCount + 1,
+          lastWornDate: today,
+        };
+      })
+    );
+  }, []);
+
   return {
     items,
     loaded,
@@ -69,5 +93,7 @@ export function useCloset() {
     toggleFavorite,
     addItem,
     removeItem,
+    updateItem,
+    logWorn,
   };
 }

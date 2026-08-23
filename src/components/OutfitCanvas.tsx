@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   Animated,
   Dimensions,
@@ -17,11 +18,15 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { File } from 'expo-file-system';
+import { captureRef } from 'react-native-view-shot';
+import * as Sharing from 'expo-sharing';
 import type { Category, Item, SavedOutfit } from '../types';
 import { OUTFITS_STORAGE_KEY, categories } from '../constants';
 import { useTheme, fonts, shapes, type Palette } from '../theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+type CanvasBackdrop = 'minimal' | 'grid' | 'warm';
 
 let instanceSeq = 0;
 const nextInstanceId = (prefix: string) => `${prefix}-${++instanceSeq}`;
@@ -281,7 +286,10 @@ export function OutfitCanvas({ items }: Props) {
   const [showSavePrompt, setShowSavePrompt] = useState(false);
   const [outfitName, setOutfitName] = useState('');
   const [lastRemovedPiece, setLastRemovedPiece] = useState<CanvasPieceData | null>(null);
+  const [backdrop, setBackdrop] = useState<CanvasBackdrop>('minimal');
+  const [isExporting, setIsExporting] = useState(false);
 
+  const canvasRef = useRef<View>(null);
   const nextZIndex = useRef(10);
   const undoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -438,6 +446,44 @@ export function OutfitCanvas({ items }: Props) {
         },
       },
     ]);
+  };
+
+  const handleCycleBackdrop = () => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setBackdrop((current) => {
+      if (current === 'minimal') return 'grid';
+      if (current === 'grid') return 'warm';
+      return 'minimal';
+    });
+  };
+
+  const handleExportAndShare = async () => {
+    if (canvasPieces.length === 0 || isExporting) return;
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setSelectedInstanceId(null);
+    setIsExporting(true);
+
+    try {
+      if (!canvasRef.current) throw new Error('Canvas ref unattached');
+      const uri = await captureRef(canvasRef, {
+        format: 'png',
+        quality: 1.0,
+      });
+
+      const isAvailable = await Sharing.isAvailableAsync();
+      if (isAvailable) {
+        await Sharing.shareAsync(uri, {
+          mimeType: 'image/png',
+          dialogTitle: 'Share Atelier Lookbook',
+        });
+      } else {
+        Alert.alert('Lookbook Rendered', `Saved lookbook capture to: ${uri}`);
+      }
+    } catch {
+      Alert.alert('Export Error', 'Could not render high-res lookbook. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const handleShuffle = () => {
@@ -599,6 +645,40 @@ export function OutfitCanvas({ items }: Props) {
 
         <View style={styles.toolbarRight}>
           <Pressable
+            onPress={handleCycleBackdrop}
+            hitSlop={8}
+            style={({ pressed }) => [styles.toolBtn, pressed && styles.pressed]}
+          >
+            <Ionicons
+              name={
+                backdrop === 'grid'
+                  ? 'grid'
+                  : backdrop === 'warm'
+                  ? 'color-palette-outline'
+                  : 'color-wand-outline'
+              }
+              size={17}
+              color={c.onSurface}
+            />
+          </Pressable>
+
+          <Pressable
+            onPress={handleExportAndShare}
+            hitSlop={8}
+            style={({ pressed }) => [
+              styles.toolBtn,
+              canvasPieces.length === 0 && styles.toolBtnDisabled,
+              pressed && styles.pressed,
+            ]}
+          >
+            {isExporting ? (
+              <ActivityIndicator size="small" color={c.gold} />
+            ) : (
+              <Ionicons name="share-social-outline" size={17} color={c.onSurface} />
+            )}
+          </Pressable>
+
+          <Pressable
             onPress={handleShuffle}
             hitSlop={8}
             style={({ pressed }) => [styles.toolBtn, pressed && styles.pressed]}
@@ -651,9 +731,23 @@ export function OutfitCanvas({ items }: Props) {
 
       {/* Main Interactive Canvas Board */}
       <View
-        style={styles.canvasBoard}
+        ref={canvasRef}
+        collapsable={false}
+        style={[
+          styles.canvasBoard,
+          backdrop === 'warm' && styles.canvasBoardWarm,
+          backdrop === 'grid' && styles.canvasBoardGrid,
+        ]}
         {...canvasBoardResponder.panHandlers}
       >
+        {/* Subtle Architectural Grid Overlay when Grid backdrop active */}
+        {backdrop === 'grid' && (
+          <View style={styles.gridOverlay} pointerEvents="none">
+            <View style={styles.gridLineVertical} />
+            <View style={styles.gridLineHorizontal} />
+          </View>
+        )}
+
         <Pressable
           style={StyleSheet.absoluteFill}
           onPress={() => setSelectedInstanceId(null)}
@@ -665,7 +759,7 @@ export function OutfitCanvas({ items }: Props) {
               </View>
               <Text style={styles.hintTitle}>Interactive Lookbook Studio</Text>
               <Text style={styles.hintText}>
-                Tap pieces below to add cutouts. Drag anywhere, and pinch with 2 fingers to expand & shrink.
+                Tap pieces below to add cutouts. Drag anywhere, pinch with 2 fingers to expand & shrink, and tap share to export your lookbook.
               </Text>
             </View>
           ) : (
@@ -947,11 +1041,11 @@ const makeStyles = (c: Palette) =>
     toolbarRight: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 8,
+      gap: 7,
     },
     toolBtn: {
-      width: 38,
-      height: 38,
+      width: 36,
+      height: 36,
       borderRadius: shapes.full,
       backgroundColor: c.cardBg,
       borderWidth: 1,
@@ -985,6 +1079,35 @@ const makeStyles = (c: Palette) =>
       position: 'relative',
       backgroundColor: c.surface,
       overflow: 'hidden',
+    },
+    canvasBoardWarm: {
+      backgroundColor: c.surfaceContainerLow,
+    },
+    canvasBoardGrid: {
+      backgroundColor: c.surface,
+    },
+    gridOverlay: {
+      ...StyleSheet.absoluteFill,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    gridLineVertical: {
+      position: 'absolute',
+      top: 0,
+      bottom: 0,
+      width: 1,
+      borderLeftWidth: 1,
+      borderLeftColor: c.outlineVariant,
+      borderStyle: 'dashed',
+    },
+    gridLineHorizontal: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      height: 1,
+      borderTopWidth: 1,
+      borderTopColor: c.outlineVariant,
+      borderStyle: 'dashed',
     },
     emptyCanvasHint: {
       flex: 1,

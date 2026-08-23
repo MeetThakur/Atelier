@@ -42,7 +42,7 @@ src/
                          documentDirectory/closet/<id>.png (expo-file-system object API)
   lib/images.ts          pickImage(camera|library) single, pickImages(limit 8) multi; permission Alerts live here
   lib/storage.ts         loadItems() / saveItems()
-  hooks/useCloset.ts     items state, loaded gate, saveFailed flag, addItem/toggleFavorite/removeItem
+  hooks/useCloset.ts     items state, loaded gate, saveFailed flag, addItem/toggleFavorite/removeItem/updateItem/logWorn
   components/            Header, SearchBar, CategoryChips, SectionHeader, FilterModal,
                          ItemCard (memo, double-tap heart & corner heart), EmptyState, Fab, AddItemModal,
                          BottomNavBar, OutfitCanvas (Studio tab), StatsScreen (Stats tab),
@@ -67,6 +67,7 @@ eas.json                 preview profile builds an installable APK
   - The canvas board also hosts a multi-touch `PanResponder` to capture 2-finger expand/shrink pinch gestures anywhere across the screen for the active piece.
   - Child action buttons use `onStartShouldSetPanResponder: () => false` on parent responders so clicks are delivered instantly without capture blocking.
 - Studio Canvas pieces render as 100% transparent cutouts on the canvas surface without background drop shadows or borders.
+- Lookbook Export & Sharing: Uses `captureRef` from `react-native-view-shot` on `OutfitCanvas` with native `expo-sharing`.
 - Dragged piece positions must be reported back up to parent state (`onMoveEnd` → `handleUpdatePosition`) — saved looks persist `p.x`/`p.y`/`p.scale` from state, not local Animated offsets.
 - `saveFailed` from `useCloset` drives the persistence-failure banner in App; keep surfacing it.
 - Batch-add item ids use `${Date.now()}-${index}` (useCloset.addItem); canvas instance ids use module-scope `nextInstanceId()` counter — never plain Date.now() (collides within one batch).

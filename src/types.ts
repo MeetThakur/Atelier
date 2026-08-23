@@ -14,6 +14,8 @@ export type Item = {
   image: string;
   favorite?: boolean;
   season?: Season;
+  wearCount?: number;
+  lastWornDate?: string;
 };
 
 export type SavedOutfit = {

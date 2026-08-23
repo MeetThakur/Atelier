@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { ClothingCategory, Item, SavedOutfit, Season } from '../types';
@@ -69,6 +69,15 @@ export function StatsScreen({ items }: Props) {
       seasonCounts[s]++;
     }
   }
+
+  // Wear Log Metrics
+  const totalWears = items.reduce((acc, item) => acc + (item.wearCount || 0), 0);
+  const mostWornPieces = [...items]
+    .filter((i) => (i.wearCount || 0) > 0)
+    .sort((a, b) => (b.wearCount || 0) - (a.wearCount || 0))
+    .slice(0, 4);
+
+  const unwornCount = items.filter((i) => !i.wearCount || i.wearCount === 0).length;
 
   // Potential Outfit Combinations
   const topsCount = categoryCounts.Tops;
@@ -153,10 +162,10 @@ export function StatsScreen({ items }: Props) {
 
         <View style={styles.metricCard}>
           <View style={[styles.metricIconCircle, { backgroundColor: c.goldContainer }]}>
-            <Ionicons name="bookmark-outline" size={17} color={c.gold} />
+            <Ionicons name="time-outline" size={17} color={c.gold} />
           </View>
-          <Text style={styles.metricNumber}>{savedOutfitsCount}</Text>
-          <Text style={styles.metricLabel}>Saved Outfits</Text>
+          <Text style={styles.metricNumber}>{totalWears}</Text>
+          <Text style={styles.metricLabel}>Total Outfit Wears</Text>
         </View>
 
         <View style={styles.metricCard}>
@@ -179,6 +188,32 @@ export function StatsScreen({ items }: Props) {
         <Text style={styles.insightTitle}>{insightHeadline}</Text>
         <Text style={styles.insightText}>{insightBody}</Text>
       </View>
+
+      {/* Most Worn Pieces / Wardrobe Utility */}
+      {mostWornPieces.length > 0 && (
+        <View style={styles.section}>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionTitle}>Most Worn Pieces</Text>
+            <Text style={styles.sectionSubtext}>{unwornCount} unlogged pieces</Text>
+          </View>
+
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.mostWornRow}>
+            {mostWornPieces.map((piece) => (
+              <View key={piece.id} style={styles.wornPieceCard}>
+                <Image source={{ uri: piece.image }} style={styles.wornPieceImg} resizeMode="contain" />
+                <View style={styles.wornPieceInfo}>
+                  <Text style={styles.wornPieceName} numberOfLines={1}>
+                    {piece.name}
+                  </Text>
+                  <Text style={styles.wornPieceCount}>
+                    {piece.wearCount === 1 ? '1 wear' : `${piece.wearCount} wears`}
+                  </Text>
+                </View>
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+      )}
 
       {/* Category Breakdown Section */}
       <View style={styles.section}>
@@ -378,12 +413,55 @@ const makeStyles = (c: Palette) =>
     section: {
       marginBottom: 24,
     },
+    sectionHeaderRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 12,
+    },
     sectionTitle: {
       fontFamily: fonts.displayBold,
       color: c.onSurface,
       fontSize: 18,
       letterSpacing: -0.2,
-      marginBottom: 12,
+    },
+    sectionSubtext: {
+      fontFamily: fonts.medium,
+      color: c.onSurfaceVariant,
+      fontSize: 11.5,
+    },
+    mostWornRow: {
+      gap: 10,
+    },
+    wornPieceCard: {
+      width: 110,
+      backgroundColor: c.cardBg,
+      borderRadius: shapes.lg,
+      borderWidth: 1,
+      borderColor: c.outlineVariant,
+      padding: 8,
+      alignItems: 'center',
+    },
+    wornPieceImg: {
+      width: '100%',
+      height: 80,
+      backgroundColor: 'transparent',
+      marginBottom: 6,
+    },
+    wornPieceInfo: {
+      alignItems: 'center',
+      width: '100%',
+    },
+    wornPieceName: {
+      fontFamily: fonts.bold,
+      color: c.onSurface,
+      fontSize: 12,
+      marginBottom: 2,
+    },
+    wornPieceCount: {
+      fontFamily: fonts.medium,
+      color: c.gold,
+      fontSize: 11,
     },
     distributionCard: {
       backgroundColor: c.cardBg,
@@ -407,7 +485,7 @@ const makeStyles = (c: Palette) =>
       flexDirection: 'row',
       alignItems: 'center',
       gap: 8,
-      width: 90,
+      width: 100,
     },
     categoryIconWrap: {
       width: 26,
