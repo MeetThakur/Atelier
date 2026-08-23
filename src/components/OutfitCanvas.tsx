@@ -480,6 +480,8 @@ export function OutfitCanvas({ items }: Props) {
     setIsExporting(true);
 
     try {
+      // Wait for React to render clean canvas without UI toolbars or selection borders
+      await new Promise((resolve) => setTimeout(resolve, 80));
       if (!canvasRef.current) throw new Error('Canvas ref unattached');
       const uri = await captureRef(canvasRef, {
         format: 'png',
@@ -727,69 +729,71 @@ export function OutfitCanvas({ items }: Props) {
         ]}
         {...canvasBoardResponder.panHandlers}
       >
-        {/* Floating Studio Quick-Tools Pill Dock */}
-        <View style={styles.floatingDock}>
-          {/* Shuffle Tool */}
-          <Pressable
-            onPress={handleShuffle}
-            hitSlop={6}
-            style={({ pressed }) => [styles.dockActionBtn, pressed && styles.dockActionBtnPressed]}
-          >
-            <Ionicons name="shuffle-outline" size={15} color={c.onSurface} />
-            <Text style={styles.dockActionText}>Shuffle</Text>
-          </Pressable>
+        {/* Floating Studio Quick-Tools Pill Dock (Hidden when exporting/sharing) */}
+        {!isExporting && (
+          <View style={styles.floatingDock}>
+            {/* Shuffle Tool */}
+            <Pressable
+              onPress={handleShuffle}
+              hitSlop={6}
+              style={({ pressed }) => [styles.dockActionBtn, pressed && styles.dockActionBtnPressed]}
+            >
+              <Ionicons name="shuffle-outline" size={15} color={c.onSurface} />
+              <Text style={styles.dockActionText}>Shuffle</Text>
+            </Pressable>
 
-          <View style={styles.dockDivider} />
+            <View style={styles.dockDivider} />
 
-          {/* Backdrop Switcher */}
-          <Pressable
-            onPress={handleCycleBackdrop}
-            hitSlop={6}
-            style={({ pressed }) => [styles.dockActionBtn, pressed && styles.dockActionBtnPressed]}
-          >
-            <Ionicons
-              name={
-                backdrop === 'grid'
-                  ? 'grid-outline'
-                  : backdrop === 'linen'
-                  ? 'color-filter-outline'
-                  : backdrop === 'noir'
-                  ? 'contrast-outline'
-                  : 'color-wand-outline'
-              }
-              size={15}
-              color={c.gold}
-            />
-            <Text style={styles.dockActionText}>{BACKDROP_LABELS[backdrop]}</Text>
-          </Pressable>
+            {/* Backdrop Switcher */}
+            <Pressable
+              onPress={handleCycleBackdrop}
+              hitSlop={6}
+              style={({ pressed }) => [styles.dockActionBtn, pressed && styles.dockActionBtnPressed]}
+            >
+              <Ionicons
+                name={
+                  backdrop === 'grid'
+                    ? 'grid-outline'
+                    : backdrop === 'linen'
+                    ? 'color-filter-outline'
+                    : backdrop === 'noir'
+                    ? 'contrast-outline'
+                    : 'color-wand-outline'
+                }
+                size={15}
+                color={c.gold}
+              />
+              <Text style={styles.dockActionText}>{BACKDROP_LABELS[backdrop]}</Text>
+            </Pressable>
 
-          {canvasPieces.length > 0 && (
-            <>
-              <View style={styles.dockDivider} />
+            {canvasPieces.length > 0 && (
+              <>
+                <View style={styles.dockDivider} />
 
-              {/* Save Look Button */}
-              <Pressable
-                onPress={() => setShowSavePrompt(true)}
-                hitSlop={6}
-                style={({ pressed }) => [styles.dockSaveBtn, pressed && styles.pressed]}
-              >
-                <Ionicons name="checkmark-done" size={15} color="#FFFFFF" />
-                <Text style={styles.dockSaveBtnText}>Save</Text>
-              </Pressable>
+                {/* Save Look Button */}
+                <Pressable
+                  onPress={() => setShowSavePrompt(true)}
+                  hitSlop={6}
+                  style={({ pressed }) => [styles.dockSaveBtn, pressed && styles.pressed]}
+                >
+                  <Ionicons name="checkmark-done" size={15} color="#FFFFFF" />
+                  <Text style={styles.dockSaveBtnText}>Save</Text>
+                </Pressable>
 
-              <View style={styles.dockDivider} />
+                <View style={styles.dockDivider} />
 
-              {/* Clear Board */}
-              <Pressable
-                onPress={handleClear}
-                hitSlop={6}
-                style={({ pressed }) => [styles.dockClearBtn, pressed && styles.pressed]}
-              >
-                <Ionicons name="trash-outline" size={15} color={c.error} />
-              </Pressable>
-            </>
-          )}
-        </View>
+                {/* Clear Board */}
+                <Pressable
+                  onPress={handleClear}
+                  hitSlop={6}
+                  style={({ pressed }) => [styles.dockClearBtn, pressed && styles.pressed]}
+                >
+                  <Ionicons name="trash-outline" size={15} color={c.error} />
+                </Pressable>
+              </>
+            )}
+          </View>
+        )}
 
         {/* Architectural Grid Overlay */}
         {backdrop === 'grid' && (
@@ -822,7 +826,7 @@ export function OutfitCanvas({ items }: Props) {
               <DraggablePiece
                 key={piece.instanceId}
                 data={piece}
-                isSelected={selectedInstanceId === piece.instanceId}
+                isSelected={!isExporting && selectedInstanceId === piece.instanceId}
                 onSelect={() => setSelectedInstanceId(piece.instanceId)}
                 onRemove={() => handleRemovePiece(piece.instanceId)}
                 onBringToFront={() => handleBringToFront(piece.instanceId)}
@@ -834,8 +838,8 @@ export function OutfitCanvas({ items }: Props) {
           )}
         </Pressable>
 
-        {/* Undo Floating Banner */}
-        {lastRemovedPiece && (
+        {/* Undo Floating Banner (Hidden when exporting/sharing) */}
+        {!isExporting && lastRemovedPiece && (
           <View style={styles.undoBanner}>
             <Text style={styles.undoText}>Piece removed</Text>
             <Pressable onPress={handleUndoRemove} hitSlop={8} style={styles.undoBtn}>
