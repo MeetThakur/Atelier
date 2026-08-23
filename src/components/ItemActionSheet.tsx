@@ -12,7 +12,6 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import type { Item } from '../types';
 import { useTheme, fonts, shapes, type Palette } from '../theme';
-import { todayISO } from '../lib/format';
 
 type Props = {
   item: Item | null;
@@ -20,7 +19,6 @@ type Props = {
   onClose: () => void;
   onOpenDetails: (item: Item) => void;
   onToggleFavorite: (id: string) => void;
-  onToggleWornToday: (id: string) => void;
   onRemove: (item: Item) => void;
 };
 
@@ -30,15 +28,12 @@ export function ItemActionSheet({
   onClose,
   onOpenDetails,
   onToggleFavorite,
-  onToggleWornToday,
   onRemove,
 }: Props) {
   const c = useTheme();
   const styles = makeStyles(c);
 
   if (!item) return null;
-
-  const isWornToday = item.wornOn === todayISO();
 
   const handleDetails = () => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -49,12 +44,6 @@ export function ItemActionSheet({
   const handleFavorite = () => {
     void Haptics.selectionAsync();
     onToggleFavorite(item.id);
-    onClose();
-  };
-
-  const handleWorn = () => {
-    void Haptics.selectionAsync();
-    onToggleWornToday(item.id);
     onClose();
   };
 
@@ -134,29 +123,6 @@ export function ItemActionSheet({
               {item.favorite && (
                 <View style={styles.activeTag}>
                   <Text style={styles.activeTagText}>Active</Text>
-                </View>
-              )}
-            </Pressable>
-
-            <Pressable
-              onPress={handleWorn}
-              style={({ pressed }) => [styles.actionRow, pressed && styles.rowPressed]}
-            >
-              <View style={styles.iconCircle}>
-                <Ionicons
-                  name={isWornToday ? 'sparkles' : 'sparkles-outline'}
-                  size={18}
-                  color={isWornToday ? c.tertiary : c.onSurface}
-                />
-              </View>
-              <Text style={styles.actionLabel}>
-                {isWornToday ? 'Clear Worn Today' : 'Mark Worn Today'}
-              </Text>
-              {isWornToday && (
-                <View style={[styles.activeTag, { backgroundColor: c.tertiaryContainer }]}>
-                  <Text style={[styles.activeTagText, { color: c.onTertiaryContainer }]}>
-                    Today
-                  </Text>
                 </View>
               )}
             </Pressable>

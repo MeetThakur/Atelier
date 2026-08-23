@@ -5,14 +5,12 @@ import * as Haptics from 'expo-haptics';
 import type { Item } from '../types';
 import { SEASON_ICONS } from '../constants';
 import { useTheme, fonts, shapes, type Palette } from '../theme';
-import { todayISO } from '../lib/format';
 
 type Props = {
   item: Item;
   onPress: () => void;
   onOpenMenu: () => void;
   onToggleFavorite: (id: string) => void;
-  onToggleWornToday?: (id: string) => void;
 };
 
 export const ItemCard = memo(function ItemCard({
@@ -20,22 +18,13 @@ export const ItemCard = memo(function ItemCard({
   onPress,
   onOpenMenu,
   onToggleFavorite,
-  onToggleWornToday,
 }: Props) {
   const c = useTheme();
   const styles = makeStyles(c);
-  const isWornToday = item.wornOn === todayISO();
 
   const handleFavoritePress = () => {
     void Haptics.selectionAsync();
     onToggleFavorite(item.id);
-  };
-
-  const handleWornPress = () => {
-    if (onToggleWornToday) {
-      void Haptics.selectionAsync();
-      onToggleWornToday(item.id);
-    }
   };
 
   const handleLongPress = () => {
@@ -75,19 +64,6 @@ export const ItemCard = memo(function ItemCard({
             color={item.favorite ? '#E0534C' : '#FFFFFF'}
           />
         </Pressable>
-
-        {/* Worn Today Floating Badge */}
-        {isWornToday ? (
-          <Pressable onPress={handleWornPress} style={styles.wornBadge}>
-            <Ionicons name="sparkles" size={11} color="#FFFFFF" />
-            <Text style={styles.wornText}>WORN TODAY</Text>
-          </Pressable>
-        ) : (
-          <Pressable onPress={handleWornPress} hitSlop={6} style={styles.wearActionPill}>
-            <Ionicons name="sparkles-outline" size={11} color="#FFFFFF" />
-            <Text style={styles.wearActionText}>Wear</Text>
-          </Pressable>
-        )}
       </View>
 
       <View style={styles.infoArea}>
@@ -170,41 +146,6 @@ const makeStyles = (c: Palette) =>
     },
     glassIconButtonActive: {
       backgroundColor: 'rgba(255, 255, 255, 0.92)',
-    },
-    wornBadge: {
-      position: 'absolute',
-      left: 10,
-      bottom: 10,
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 4,
-      backgroundColor: c.tertiary,
-      borderRadius: shapes.xs,
-      paddingHorizontal: 8,
-      paddingVertical: 3.5,
-    },
-    wornText: {
-      fontFamily: fonts.extraBold,
-      color: '#FFFFFF',
-      fontSize: 9,
-      letterSpacing: 0.6,
-    },
-    wearActionPill: {
-      position: 'absolute',
-      left: 10,
-      bottom: 10,
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 4,
-      backgroundColor: 'rgba(18, 16, 14, 0.55)',
-      borderRadius: shapes.xs,
-      paddingHorizontal: 8,
-      paddingVertical: 3.5,
-    },
-    wearActionText: {
-      fontFamily: fonts.bold,
-      color: '#FFFFFF',
-      fontSize: 9.5,
     },
     infoArea: {
       paddingHorizontal: 12,

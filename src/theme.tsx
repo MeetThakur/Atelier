@@ -1,4 +1,8 @@
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useColorScheme } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const THEME_STORAGE_KEY = '@atelier_theme_mode';
 
 export const fonts = {
   regular: 'PlusJakartaSans_400Regular',
@@ -111,10 +115,66 @@ export const dark = {
 } as const;
 
 export type Palette = { [K in keyof typeof light]: string };
+export type ThemeMode = 'system' | 'light' | 'dark';
 
 export const colors: Palette = light;
 
 export const paletteFor = (scheme: string | null | undefined): Palette =>
   scheme === 'dark' ? dark : light;
 
-export const useTheme = (): Palette => paletteFor(useColorScheme());
+type ThemeContextValue = {
+  palette: Palette;
+  mode: ThemeMode;
+  isDark: boolean;
+  setMode: (mode: ThemeMode) => void;
+  toggleTheme: () => void;
+};
+
+const ThemeContext = createContext<ThemeContextValue>({
+  palette: light,
+  mode: 'system',
+  isDark: false,
+  setMode: () => {},
+  toggleTheme: () => {},
+});
+
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const systemScheme = useColorScheme();
+  const [mode, setModeState] = useState<ThemeMode>('system');
+
+  useEffect(() => {
+    AsyncStorage.getItem(THEME_STORAGE_KEY)
+      .then((saved) => {
+        if (saved === 'light' || saved === 'dark' || saved === 'system') {
+          setModeState(saved);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const setMode = (newMode: ThemeMode) => {
+    setModeState(newMode);
+    AsyncStorage.setItem(THEME_STORAGE_KEY, newMode).catch(() => {});
+  };
+
+  const isDark = mode === 'system' ? systemScheme === 'dark' : mode === 'dark';
+  const palette = isDark ? dark : light;
+
+  const toggleTheme = () => {
+    setMode(isDark ? 'light' : 'dark');
+  };
+
+  return (
+    <ThemeContext.Provider value={{ palette, mode, isDark, setMode, toggleTheme }}>
+      {children}
+    </ThemeContext.Provider>
+  );
+}
+
+export const useTheme = (): Palette => {
+  const ctx = useContext(ThemeContext);
+  const systemScheme = useColorScheme();
+  return ctx ? ctx.palette : paletteFor(systemScheme);
+};
+
+export const useThemeMode = () => useContext(ThemeContext);

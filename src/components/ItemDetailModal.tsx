@@ -14,14 +14,12 @@ import * as Haptics from 'expo-haptics';
 import type { Item } from '../types';
 import { SEASON_ICONS } from '../constants';
 import { useTheme, fonts, shapes, type Palette } from '../theme';
-import { formatDate, todayISO } from '../lib/format';
 
 type Props = {
   item: Item | null;
   visible: boolean;
   onClose: () => void;
   onToggleFavorite: (id: string) => void;
-  onToggleWornToday: (id: string) => void;
   onRemove: (item: Item) => void;
 };
 
@@ -30,7 +28,6 @@ export function ItemDetailModal({
   visible,
   onClose,
   onToggleFavorite,
-  onToggleWornToday,
   onRemove,
 }: Props) {
   const c = useTheme();
@@ -38,16 +35,9 @@ export function ItemDetailModal({
 
   if (!item) return null;
 
-  const isWornToday = item.wornOn === todayISO();
-
   const handleFavoritePress = () => {
     void Haptics.selectionAsync();
     onToggleFavorite(item.id);
-  };
-
-  const handleWornPress = () => {
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    onToggleWornToday(item.id);
   };
 
   const handleDeletePress = () => {
@@ -130,49 +120,30 @@ export function ItemDetailModal({
 
               <Text style={styles.title}>{item.name}</Text>
 
-              {/* History & Date Metadata */}
-              <View style={styles.metaBox}>
-                <View style={styles.metaItem}>
-                  <Text style={styles.metaLabel}>PIECE</Text>
-                  <Text style={styles.metaValue}>{item.category}</Text>
-                </View>
-
-                <View style={styles.metaDivider} />
-
-                <View style={styles.metaItem}>
-                  <Text style={styles.metaLabel}>STATUS</Text>
-                  <Text style={styles.metaValue}>
-                    {isWornToday
-                      ? 'Worn Today ✨'
-                      : item.wornOn
-                        ? `Worn ${formatDate(item.wornOn)}`
-                        : 'Unworn'}
-                  </Text>
-                </View>
-              </View>
-
               {/* Actions Section */}
               <View style={styles.actionButtons}>
                 <Pressable
-                  onPress={handleWornPress}
+                  onPress={handleFavoritePress}
                   style={({ pressed }) => [
-                    styles.wornActionButton,
-                    isWornToday ? styles.wornActionActive : styles.wornActionInactive,
+                    styles.favoriteActionButton,
+                    item.favorite ? styles.favoriteActionActive : styles.favoriteActionInactive,
                     pressed && styles.pressed,
                   ]}
                 >
                   <Ionicons
-                    name={isWornToday ? 'sparkles' : 'sparkles-outline'}
+                    name={item.favorite ? 'heart' : 'heart-outline'}
                     size={18}
-                    color={isWornToday ? '#FFFFFF' : c.onSurface}
+                    color={item.favorite ? '#FFFFFF' : c.onSurface}
                   />
                   <Text
                     style={[
-                      styles.wornActionText,
-                      isWornToday ? styles.wornActionTextActive : styles.wornActionTextInactive,
+                      styles.favoriteActionText,
+                      item.favorite
+                        ? styles.favoriteActionTextActive
+                        : styles.favoriteActionTextInactive,
                     ]}
                   >
-                    {isWornToday ? 'Worn Today' : 'Mark Worn Today'}
+                    {item.favorite ? 'Favorited Piece' : 'Add to Favorites'}
                   </Text>
                 </Pressable>
 
@@ -289,42 +260,12 @@ const makeStyles = (c: Palette) =>
       color: c.onSurface,
       fontSize: 24,
       letterSpacing: 0.2,
-      marginBottom: 16,
-    },
-    metaBox: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: c.surfaceContainerHigh,
-      borderRadius: shapes.md,
-      paddingVertical: 12,
-      paddingHorizontal: 16,
       marginBottom: 20,
-    },
-    metaItem: {
-      flex: 1,
-    },
-    metaDivider: {
-      width: 1,
-      height: 28,
-      backgroundColor: c.outlineVariant,
-      marginHorizontal: 12,
-    },
-    metaLabel: {
-      fontFamily: fonts.bold,
-      color: c.onSurfaceVariant,
-      fontSize: 9.5,
-      letterSpacing: 1,
-      marginBottom: 2,
-    },
-    metaValue: {
-      fontFamily: fonts.semiBold,
-      color: c.onSurface,
-      fontSize: 13,
     },
     actionButtons: {
       gap: 10,
     },
-    wornActionButton: {
+    favoriteActionButton: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
@@ -332,22 +273,22 @@ const makeStyles = (c: Palette) =>
       height: 48,
       borderRadius: shapes.full,
     },
-    wornActionActive: {
-      backgroundColor: c.tertiary,
+    favoriteActionActive: {
+      backgroundColor: '#E0534C',
     },
-    wornActionInactive: {
+    favoriteActionInactive: {
       backgroundColor: c.surfaceContainerHigh,
       borderWidth: 1,
       borderColor: c.outlineVariant,
     },
-    wornActionText: {
+    favoriteActionText: {
       fontFamily: fonts.bold,
       fontSize: 14,
     },
-    wornActionTextActive: {
+    favoriteActionTextActive: {
       color: '#FFFFFF',
     },
-    wornActionTextInactive: {
+    favoriteActionTextInactive: {
       color: c.onSurface,
     },
     deleteButton: {

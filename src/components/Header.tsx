@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme, fonts, shapes, type Palette } from '../theme';
+import * as Haptics from 'expo-haptics';
+import { useTheme, useThemeMode, fonts, shapes, type Palette } from '../theme';
 import { formatHeaderDate } from '../lib/format';
 
 type Props = {
@@ -12,7 +13,13 @@ type Props = {
 
 export function Header({ greeting, totalPieces, searchActive, onToggleSearch }: Props) {
   const c = useTheme();
+  const { isDark, toggleTheme } = useThemeMode();
   const styles = makeStyles(c);
+
+  const handleThemeToggle = () => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    toggleTheme();
+  };
 
   return (
     <View style={styles.header}>
@@ -35,6 +42,18 @@ export function Header({ greeting, totalPieces, searchActive, onToggleSearch }: 
 
       <View style={styles.actionsRow}>
         <Pressable
+          accessibilityLabel={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          onPress={handleThemeToggle}
+          style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
+        >
+          <Ionicons
+            name={isDark ? 'sunny-outline' : 'moon-outline'}
+            size={19}
+            color={c.onSurface}
+          />
+        </Pressable>
+
+        <Pressable
           accessibilityLabel="Search archive"
           onPress={onToggleSearch}
           style={({ pressed }) => [
@@ -45,7 +64,7 @@ export function Header({ greeting, totalPieces, searchActive, onToggleSearch }: 
         >
           <Ionicons
             name={searchActive ? 'close' : 'search-outline'}
-            size={20}
+            size={19}
             color={searchActive ? c.onPrimary : c.onSurface}
           />
         </Pressable>
@@ -110,11 +129,12 @@ const makeStyles = (c: Palette) =>
     actionsRow: {
       flexDirection: 'row',
       alignItems: 'center',
+      gap: 8,
       paddingBottom: 4,
     },
     iconButton: {
-      width: 42,
-      height: 42,
+      width: 40,
+      height: 40,
       borderRadius: shapes.full,
       backgroundColor: c.surfaceContainerLow,
       borderWidth: 1,

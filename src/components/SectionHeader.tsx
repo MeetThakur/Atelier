@@ -16,7 +16,6 @@ type Props = {
 const SORT_LABELS: Record<SortMode, { label: string; icon: keyof typeof Ionicons.glyphMap }> = {
   newest: { label: 'Newest', icon: 'time-outline' },
   favorites: { label: 'Favorites', icon: 'heart-outline' },
-  worn: { label: 'Worn Today', icon: 'checkmark-circle-outline' },
   name: { label: 'A to Z', icon: 'text-outline' },
 };
 

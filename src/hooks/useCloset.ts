@@ -23,16 +23,15 @@ export function useCloset() {
   }, [items, loaded]);
 
   const toggleFavorite = useCallback((id: string) => {
-    setItems((current) => current.map((item) => item.id === id ? { ...item, favorite: !item.favorite } : item));
-  }, []);
-
-  const toggleWornToday = useCallback((id: string) => {
-    const today = new Date().toISOString().slice(0, 10);
-    setItems((current) => current.map((item) => item.id === id ? { ...item, wornOn: item.wornOn === today ? undefined : today } : item));
+    setItems((current) =>
+      current.map((item) =>
+        item.id === id ? { ...item, favorite: !item.favorite } : item
+      )
+    );
   }, []);
 
   const addItem = useCallback(
-    async ({ photoUris, name, category, season, colorHex, colorName }: NewItemDraft) => {
+    async ({ photoUris, name, category, season }: NewItemDraft) => {
       const baseName = name.trim();
       const newItems = await Promise.all(
         photoUris.map(async (uri, index) => {
@@ -46,8 +45,6 @@ export function useCloset() {
             category,
             image,
             season: season || 'All-Season',
-            colorHex,
-            colorName,
           };
           return item;
         })
@@ -58,22 +55,22 @@ export function useCloset() {
   );
 
   const updateItem = useCallback(
-    async ({ id, name, category, photoUri, wornToday, season, colorHex, colorName }: EditItemDraft) => {
-      const today = new Date().toISOString().slice(0, 10);
+    async ({ id, name, category, photoUri, season }: EditItemDraft) => {
       const patch = (item: Item): Item => ({
         ...item,
         name: name.trim() || category,
         category,
-        wornOn: wornToday ? today : undefined,
         season: season ?? item.season,
-        colorHex: colorHex ?? item.colorHex,
-        colorName: colorName ?? item.colorName,
       });
       if (photoUri && photoUri.startsWith('file://')) {
         const image = await storeImage(photoUri, id);
-        setItems((current) => current.map((item) => item.id !== id ? item : { ...patch(item), image }));
+        setItems((current) =>
+          current.map((item) => (item.id !== id ? item : { ...patch(item), image }))
+        );
       } else {
-        setItems((current) => current.map((item) => item.id !== id ? item : patch(item)));
+        setItems((current) =>
+          current.map((item) => (item.id !== id ? item : patch(item)))
+        );
       }
     },
     []
@@ -84,5 +81,13 @@ export function useCloset() {
     deleteStoredImage(item.image);
   }, []);
 
-  return { items, loaded, saveFailed, toggleFavorite, toggleWornToday, addItem, updateItem, removeItem };
+  return {
+    items,
+    loaded,
+    saveFailed,
+    toggleFavorite,
+    addItem,
+    updateItem,
+    removeItem,
+  };
 }
