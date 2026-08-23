@@ -25,7 +25,6 @@
     "expo-image-manipulator": "~57.0.12",
     "expo-image-picker": "~57.0.12",
     "expo-linear-gradient": "~57.0.1",
-    "expo-sharing": "~57.0.14",
     "expo-splash-screen": "~57.0.7",
     "react": "19.2.3",
     "react-native": "0.86.2",

@@ -9,6 +9,7 @@ import {
   PanResponder,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   TextInput,
@@ -19,7 +20,6 @@ import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { File } from 'expo-file-system';
 import { captureRef } from 'react-native-view-shot';
-import * as Sharing from 'expo-sharing';
 import type { Category, Item, SavedOutfit } from '../types';
 import { OUTFITS_STORAGE_KEY, categories } from '../constants';
 import { useTheme, fonts, shapes, type Palette } from '../theme';
@@ -470,15 +470,11 @@ export function OutfitCanvas({ items }: Props) {
         quality: 1.0,
       });
 
-      const isAvailable = await Sharing.isAvailableAsync();
-      if (isAvailable) {
-        await Sharing.shareAsync(uri, {
-          mimeType: 'image/png',
-          dialogTitle: 'Share Atelier Lookbook',
-        });
-      } else {
-        Alert.alert('Lookbook Rendered', `Saved lookbook capture to: ${uri}`);
-      }
+      await Share.share({
+        url: uri,
+        title: 'Share Atelier Lookbook',
+        message: 'Lookbook styling curated in Atelier',
+      });
     } catch {
       Alert.alert('Export Error', 'Could not render high-res lookbook. Please try again.');
     } finally {
