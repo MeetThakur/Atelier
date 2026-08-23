@@ -1,15 +1,15 @@
 import { useColorScheme } from 'react-native';
 
 export const fonts = {
-  regular: 'BricolageGrotesque_400Regular',
-  medium: 'BricolageGrotesque_500Medium',
-  semiBold: 'BricolageGrotesque_600SemiBold',
-  bold: 'BricolageGrotesque_700Bold',
-  extraBold: 'BricolageGrotesque_800ExtraBold',
-  displayMedium: 'Syne_600SemiBold',
-  displaySemiBold: 'Syne_700Bold',
-  displayBold: 'Syne_800ExtraBold',
-  displayExtraBold: 'Syne_800ExtraBold',
+  regular: 'Urbanist_400Regular',
+  medium: 'Urbanist_500Medium',
+  semiBold: 'Urbanist_600SemiBold',
+  bold: 'Urbanist_700Bold',
+  extraBold: 'Urbanist_800ExtraBold',
+  displayMedium: 'Urbanist_600SemiBold',
+  displaySemiBold: 'Urbanist_700Bold',
+  displayBold: 'Outfit_700Bold',
+  displayExtraBold: 'Outfit_800ExtraBold',
 } as const;
 
 export type Fonts = typeof fonts;
