@@ -184,7 +184,7 @@ const makeStyles = (c: Palette) =>
       width: '100%',
       maxWidth: 420,
       maxHeight: '92%',
-      backgroundColor: c.surfaceContainerLow,
+      backgroundColor: c.cardBg,
       borderRadius: shapes.xxl,
       overflow: 'hidden',
       borderWidth: 1,
@@ -214,7 +214,7 @@ const makeStyles = (c: Palette) =>
     heroImageWrap: {
       width: '100%',
       height: 380,
-      backgroundColor: c.surfaceContainerHighest,
+      backgroundColor: c.imageBg,
     },
     heroImage: {
       width: '100%',

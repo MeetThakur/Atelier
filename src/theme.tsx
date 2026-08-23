@@ -30,7 +30,7 @@ export const shapes = {
 
 export type Shapes = typeof shapes;
 
-// Editorial Minimalist Light Palette (Warm Alabaster + Espresso + Champagne)
+// Editorial Minimalist Light Palette (Warm Alabaster + Crisp White Card + Espresso + Champagne)
 export const light = {
   primary: '#1A1816',
   onPrimary: '#FAF8F5',
@@ -55,24 +55,27 @@ export const light = {
   errorContainer: '#FCEBEA',
   onErrorContainer: '#54120E',
 
-  surface: '#FAF8F5',
+  surface: '#F7F5F0',
   onSurface: '#1A1816',
   surfaceVariant: '#EFECE6',
   onSurfaceVariant: '#78726A',
 
   surfaceContainerLowest: '#FFFFFF',
-  surfaceContainerLow: '#F5F2EB',
-  surfaceContainer: '#EFECE6',
-  surfaceContainerHigh: '#E8E4DC',
-  surfaceContainerHighest: '#DFDAD0',
+  surfaceContainerLow: '#FFFFFF',
+  surfaceContainer: '#FFFFFF',
+  surfaceContainerHigh: '#F4F0E8',
+  surfaceContainerHighest: '#ECE8DF',
+
+  cardBg: '#FFFFFF',
+  imageBg: '#F3EFE8',
 
   outline: '#C4BEB4',
-  outlineVariant: '#E5E1D8',
+  outlineVariant: '#EAE5DC',
   scrim: 'rgba(18, 16, 14, 0.45)',
   glass: 'rgba(255, 255, 255, 0.75)',
 } as const;
 
-// Editorial Minimalist Dark Palette (Obsidian Noir + Warm Ivory + Soft Amber)
+// Editorial Minimalist Dark Palette (Obsidian Noir + Elevated Card + Warm Ivory)
 export const dark = {
   primary: '#F5F2EB',
   onPrimary: '#121214',
@@ -97,21 +100,24 @@ export const dark = {
   errorContainer: '#451715',
   onErrorContainer: '#FCEBEA',
 
-  surface: '#0F0F12',
+  surface: '#111114',
   onSurface: '#F5F2EB',
   surfaceVariant: '#1E1E24',
   onSurfaceVariant: '#969087',
 
-  surfaceContainerLowest: '#09090B',
-  surfaceContainerLow: '#15151A',
-  surfaceContainer: '#1B1B21',
-  surfaceContainerHigh: '#24242B',
-  surfaceContainerHighest: '#2E2D36',
+  surfaceContainerLowest: '#0A0A0D',
+  surfaceContainerLow: '#1A1A20',
+  surfaceContainer: '#1E1E26',
+  surfaceContainerHigh: '#262630',
+  surfaceContainerHighest: '#2F2F3B',
+
+  cardBg: '#1A1A22',
+  imageBg: '#22222C',
 
   outline: '#3D3C46',
-  outlineVariant: '#26252E',
+  outlineVariant: '#2A2933',
   scrim: 'rgba(0, 0, 0, 0.7)',
-  glass: 'rgba(22, 22, 28, 0.8)',
+  glass: 'rgba(26, 26, 32, 0.8)',
 } as const;
 
 export type Palette = { [K in keyof typeof light]: string };
@@ -132,7 +138,7 @@ type ThemeContextValue = {
 
 const ThemeContext = createContext<ThemeContextValue>({
   palette: light,
-  mode: 'system',
+  mode: 'light',
   isDark: false,
   setMode: () => {},
   toggleTheme: () => {},
@@ -140,13 +146,16 @@ const ThemeContext = createContext<ThemeContextValue>({
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const systemScheme = useColorScheme();
-  const [mode, setModeState] = useState<ThemeMode>('system');
+  const [mode, setModeState] = useState<ThemeMode>('light');
 
   useEffect(() => {
     AsyncStorage.getItem(THEME_STORAGE_KEY)
       .then((saved) => {
         if (saved === 'light' || saved === 'dark' || saved === 'system') {
           setModeState(saved);
+        } else {
+          // Default to light mode for fresh airy aesthetic
+          setModeState('light');
         }
       })
       .catch(() => {});

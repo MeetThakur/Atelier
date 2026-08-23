@@ -97,12 +97,17 @@ const makeStyles = (c: Palette) =>
   StyleSheet.create({
     card: {
       width: '48.5%',
-      backgroundColor: c.surfaceContainerLow,
+      backgroundColor: c.cardBg,
       borderRadius: shapes.xl,
       borderWidth: 1,
       borderColor: c.outlineVariant,
       overflow: 'hidden',
       marginBottom: 16,
+      shadowColor: '#000',
+      shadowOpacity: 0.04,
+      shadowRadius: 8,
+      shadowOffset: { width: 0, height: 2 },
+      elevation: 1,
     },
     cardPressed: {
       opacity: 0.9,
@@ -111,7 +116,7 @@ const makeStyles = (c: Palette) =>
     imageWrap: {
       height: 215,
       width: '100%',
-      backgroundColor: c.surfaceContainerHighest,
+      backgroundColor: c.imageBg,
       position: 'relative',
     },
     image: {
