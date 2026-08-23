@@ -168,7 +168,7 @@ const makeStyles = (c: Palette) =>
     imageWrap: {
       height: 215,
       width: '100%',
-      backgroundColor: c.imageBg,
+      backgroundColor: c.cardBg,
       position: 'relative',
       alignItems: 'center',
       justifyContent: 'center',
@@ -176,6 +176,7 @@ const makeStyles = (c: Palette) =>
     image: {
       width: '100%',
       height: '100%',
+      backgroundColor: 'transparent',
     },
     glassCategoryBadge: {
       position: 'absolute',

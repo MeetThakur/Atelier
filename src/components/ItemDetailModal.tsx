@@ -214,11 +214,12 @@ const makeStyles = (c: Palette) =>
     heroImageWrap: {
       width: '100%',
       height: 380,
-      backgroundColor: c.imageBg,
+      backgroundColor: c.cardBg,
     },
     heroImage: {
       width: '100%',
       height: '100%',
+      backgroundColor: 'transparent',
     },
     infoContent: {
       padding: 20,
