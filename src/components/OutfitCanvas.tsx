@@ -56,8 +56,12 @@ function DraggablePiece({
 
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
+      onStartShouldSetPanResponder: () => false,
+      onStartShouldSetPanResponderCapture: () => false,
+      onMoveShouldSetPanResponder: (_, gestureState) =>
+        Math.abs(gestureState.dx) > 3 || Math.abs(gestureState.dy) > 3,
+      onMoveShouldSetPanResponderCapture: (_, gestureState) =>
+        Math.abs(gestureState.dx) > 3 || Math.abs(gestureState.dy) > 3,
       onPanResponderGrant: () => {
         void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         onSelect();
@@ -80,7 +84,7 @@ function DraggablePiece({
     })
   ).current;
 
-  const baseSize = 140 * data.scale;
+  const baseSize = 145 * data.scale;
 
   return (
     <Animated.View
@@ -93,14 +97,18 @@ function DraggablePiece({
       ]}
       {...panResponder.panHandlers}
     >
-      <View
+      <Pressable
+        onPress={() => {
+          void Haptics.selectionAsync();
+          onSelect();
+        }}
         style={[
           styles.pieceFrame,
           {
             width: baseSize,
             height: baseSize * 1.25,
             borderColor: isSelected ? palette.gold : 'transparent',
-            backgroundColor: palette.cardBg,
+            backgroundColor: 'transparent',
           },
         ]}
       >
@@ -110,35 +118,47 @@ function DraggablePiece({
           resizeMode="contain"
         />
 
-        {/* Action controls when piece is selected */}
+        {/* Selected Controls Header Bar */}
         {isSelected && (
-          <>
+          <View style={styles.floatingControlsWrap} pointerEvents="box-none">
             <Pressable
-              onPress={onRemove}
-              hitSlop={8}
-              style={[styles.miniControlBtn, styles.removeBtn, { backgroundColor: palette.error }]}
+              onPress={(e) => {
+                e.stopPropagation();
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onBringToFront();
+              }}
+              hitSlop={10}
+              style={[styles.miniControlBtn, { backgroundColor: palette.primary }]}
             >
-              <Ionicons name="close" size={12} color="#FFFFFF" />
+              <Ionicons name="arrow-up" size={11} color={palette.onPrimary} />
             </Pressable>
 
             <Pressable
-              onPress={onToggleScale}
-              hitSlop={8}
-              style={[styles.miniControlBtn, styles.scaleBtn, { backgroundColor: palette.primary }]}
+              onPress={(e) => {
+                e.stopPropagation();
+                void Haptics.selectionAsync();
+                onToggleScale();
+              }}
+              hitSlop={10}
+              style={[styles.miniControlBtn, { backgroundColor: palette.primary }]}
             >
-              <Ionicons name="resize-outline" size={12} color={palette.onPrimary} />
+              <Ionicons name="resize-outline" size={11} color={palette.onPrimary} />
             </Pressable>
 
             <Pressable
-              onPress={onBringToFront}
-              hitSlop={8}
-              style={[styles.miniControlBtn, styles.layerBtn, { backgroundColor: palette.primary }]}
+              onPress={(e) => {
+                e.stopPropagation();
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                onRemove();
+              }}
+              hitSlop={10}
+              style={[styles.miniControlBtn, { backgroundColor: palette.error }]}
             >
-              <Ionicons name="arrow-up" size={12} color={palette.onPrimary} />
+              <Ionicons name="close" size={11} color="#FFFFFF" />
             </Pressable>
-          </>
+          </View>
         )}
-      </View>
+      </Pressable>
     </Animated.View>
   );
 }
@@ -180,8 +200,8 @@ export function OutfitCanvas({ items }: Props) {
   const handleAddPiece = (item: Item) => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const instanceId = `${item.id}-${Date.now()}`;
-    const initialX = SCREEN_WIDTH / 2 - 70 + (Math.random() * 40 - 20);
-    const initialY = 120 + (Math.random() * 40 - 20);
+    const initialX = SCREEN_WIDTH / 2 - 72 + (Math.random() * 30 - 15);
+    const initialY = 100 + (Math.random() * 30 - 15);
 
     const newPiece: CanvasPieceData = {
       instanceId,
@@ -197,7 +217,6 @@ export function OutfitCanvas({ items }: Props) {
   };
 
   const handleRemovePiece = (instanceId: string) => {
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setCanvasPieces((prev) => prev.filter((p) => p.instanceId !== instanceId));
     if (selectedInstanceId === instanceId) {
       setSelectedInstanceId(null);
@@ -205,7 +224,6 @@ export function OutfitCanvas({ items }: Props) {
   };
 
   const handleBringToFront = (instanceId: string) => {
-    void Haptics.selectionAsync();
     const newZ = nextZIndex.current++;
     setCanvasPieces((prev) =>
       prev.map((p) => (p.instanceId === instanceId ? { ...p, zIndex: newZ } : p))
@@ -213,11 +231,10 @@ export function OutfitCanvas({ items }: Props) {
   };
 
   const handleToggleScale = (instanceId: string) => {
-    void Haptics.selectionAsync();
     setCanvasPieces((prev) =>
       prev.map((p) => {
         if (p.instanceId !== instanceId) return p;
-        const nextScale = p.scale === 1 ? 1.3 : p.scale === 1.3 ? 0.75 : 1;
+        const nextScale = p.scale === 1 ? 1.25 : p.scale === 1.25 ? 0.8 : 1;
         return { ...p, scale: nextScale };
       })
     );
@@ -226,7 +243,7 @@ export function OutfitCanvas({ items }: Props) {
   const handleClear = () => {
     if (canvasPieces.length === 0) return;
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    Alert.alert('Clear Canvas', 'Remove all pieces from the styling canvas?', [
+    Alert.alert('Clear Studio', 'Remove all pieces from the styling board?', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Clear All',
@@ -261,7 +278,7 @@ export function OutfitCanvas({ items }: Props) {
         scale: 1.1,
         zIndex: 10,
         initialX: SCREEN_WIDTH / 2 - 75,
-        initialY: 90,
+        initialY: 60,
       });
     } else {
       if (tops.length > 0) {
@@ -271,8 +288,8 @@ export function OutfitCanvas({ items }: Props) {
           item: top,
           scale: 1,
           zIndex: 10,
-          initialX: SCREEN_WIDTH / 2 - 70,
-          initialY: 60,
+          initialX: SCREEN_WIDTH / 2 - 72,
+          initialY: 40,
         });
       }
       if (bottoms.length > 0) {
@@ -282,8 +299,8 @@ export function OutfitCanvas({ items }: Props) {
           item: bottom,
           scale: 1,
           zIndex: 11,
-          initialX: SCREEN_WIDTH / 2 - 70,
-          initialY: 180,
+          initialX: SCREEN_WIDTH / 2 - 72,
+          initialY: 155,
         });
       }
     }
@@ -295,8 +312,8 @@ export function OutfitCanvas({ items }: Props) {
         item: shoe,
         scale: 0.85,
         zIndex: 12,
-        initialX: SCREEN_WIDTH / 2 - 60,
-        initialY: 310,
+        initialX: SCREEN_WIDTH / 2 - 62,
+        initialY: 280,
       });
     }
 
@@ -340,8 +357,8 @@ export function OutfitCanvas({ items }: Props) {
       },
       scale: p.scale || 1,
       zIndex: 10 + index,
-      initialX: p.x || SCREEN_WIDTH / 2 - 70,
-      initialY: p.y || 100 + index * 80,
+      initialX: p.x || SCREEN_WIDTH / 2 - 72,
+      initialY: p.y || 80 + index * 80,
     }));
 
     setCanvasPieces(loaded);
@@ -365,13 +382,14 @@ export function OutfitCanvas({ items }: Props) {
         <View style={styles.toolbarLeft}>
           <Text style={styles.canvasTitle}>Studio Canvas</Text>
           <Text style={styles.canvasSubtitle}>
-            {canvasPieces.length} {canvasPieces.length === 1 ? 'piece' : 'pieces'} styled
+            {canvasPieces.length} {canvasPieces.length === 1 ? 'piece' : 'pieces'} floating
           </Text>
         </View>
 
         <View style={styles.toolbarRight}>
           <Pressable
             onPress={handleShuffle}
+            hitSlop={6}
             style={({ pressed }) => [styles.toolBtn, pressed && styles.pressed]}
           >
             <Ionicons name="shuffle-outline" size={17} color={c.onSurface} />
@@ -379,6 +397,7 @@ export function OutfitCanvas({ items }: Props) {
 
           <Pressable
             onPress={() => setShowSavedModal(true)}
+            hitSlop={6}
             style={({ pressed }) => [styles.toolBtn, pressed && styles.pressed]}
           >
             <Ionicons name="bookmark-outline" size={17} color={c.onSurface} />
@@ -395,6 +414,7 @@ export function OutfitCanvas({ items }: Props) {
                 setShowSavePrompt(true);
               }
             }}
+            hitSlop={6}
             style={({ pressed }) => [
               styles.toolBtn,
               canvasPieces.length === 0 && styles.toolBtnDisabled,
@@ -406,6 +426,7 @@ export function OutfitCanvas({ items }: Props) {
 
           <Pressable
             onPress={handleClear}
+            hitSlop={6}
             style={({ pressed }) => [
               styles.toolBtn,
               canvasPieces.length === 0 && styles.toolBtnDisabled,
@@ -424,10 +445,9 @@ export function OutfitCanvas({ items }: Props) {
             <View style={styles.hintIconCircle}>
               <Ionicons name="finger-print-outline" size={28} color={c.gold} />
             </View>
-            <Text style={styles.hintTitle}>Interactive Styling Studio</Text>
+            <Text style={styles.hintTitle}>Interactive Lookbook Studio</Text>
             <Text style={styles.hintText}>
-              Tap pieces from your wardrobe tray below to drag & compose outfits freely on the
-              canvas.
+              Tap pieces from your wardrobe tray below to float cutouts freely on the canvas board.
             </Text>
           </View>
         ) : (
@@ -452,6 +472,7 @@ export function OutfitCanvas({ items }: Props) {
           <Pressable
             onPress={() => setDrawerExpanded((prev) => !prev)}
             style={styles.drawerToggle}
+            hitSlop={8}
           >
             <View style={styles.drawerHandle} />
             <Text style={styles.drawerTitle}>Wardrobe Pieces ({filteredDrawerItems.length})</Text>
@@ -470,6 +491,7 @@ export function OutfitCanvas({ items }: Props) {
                 <Pressable
                   key={cat}
                   onPress={() => setDrawerCategory(cat)}
+                  hitSlop={4}
                   style={[
                     styles.drawerCatChip,
                     drawerCategory === cat && styles.drawerCatChipActive,
@@ -500,6 +522,7 @@ export function OutfitCanvas({ items }: Props) {
                   <Pressable
                     key={item.id}
                     onPress={() => handleAddPiece(item)}
+                    hitSlop={4}
                     style={({ pressed }) => [styles.trayCard, pressed && styles.pressed]}
                   >
                     <Image source={{ uri: item.image }} style={styles.trayImage} resizeMode="contain" />
@@ -607,44 +630,38 @@ export function OutfitCanvas({ items }: Props) {
 
 const styles = StyleSheet.create({
   pieceFrame: {
-    borderRadius: shapes.xl,
-    borderWidth: 2,
+    borderRadius: shapes.lg,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 8,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
+    padding: 4,
+    position: 'relative',
   },
   pieceImage: {
     width: '100%',
     height: '100%',
+    backgroundColor: 'transparent',
+  },
+  floatingControlsWrap: {
+    position: 'absolute',
+    top: -16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    zIndex: 999,
   },
   miniControlBtn: {
-    position: 'absolute',
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 3,
-  },
-  removeBtn: {
-    top: -6,
-    right: -6,
-  },
-  scaleBtn: {
-    bottom: -6,
-    right: -6,
-  },
-  layerBtn: {
-    top: -6,
-    left: -6,
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 5,
   },
 });
 
@@ -755,10 +772,10 @@ const makeStyles = (c: Palette) =>
       borderWidth: 1,
       borderColor: c.outlineVariant,
       paddingTop: 10,
-      paddingBottom: 24,
+      paddingBottom: 85,
     },
     drawerCollapsed: {
-      paddingBottom: 10,
+      paddingBottom: 85,
     },
     drawerHeader: {
       alignItems: 'center',
@@ -828,6 +845,7 @@ const makeStyles = (c: Palette) =>
     trayImage: {
       width: '100%',
       height: '100%',
+      backgroundColor: 'transparent',
     },
     trayPlusBadge: {
       position: 'absolute',
