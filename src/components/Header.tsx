@@ -117,14 +117,17 @@ const makeStyles = (c: Palette) =>
     counterCapsule: {
       backgroundColor: c.primaryContainer,
       borderRadius: shapes.full,
-      paddingHorizontal: 9,
-      paddingVertical: 3,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      alignSelf: 'center',
     },
     counterText: {
       fontFamily: fonts.bold,
       color: c.onPrimaryContainer,
-      fontSize: 9.5,
+      fontSize: 10,
       letterSpacing: 0.8,
+      includeFontPadding: false,
+      textAlignVertical: 'center',
     },
     actionsRow: {
       flexDirection: 'row',

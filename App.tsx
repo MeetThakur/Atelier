@@ -346,16 +346,18 @@ const makeStyles = (c: Palette) =>
     activeFilterPill: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 5,
-      height: 28,
-      paddingHorizontal: 10,
+      gap: 6,
+      height: 32,
+      paddingHorizontal: 12,
       borderRadius: shapes.full,
       backgroundColor: c.primaryContainer,
     },
     activeFilterText: {
       fontFamily: fonts.bold,
       color: c.onPrimaryContainer,
-      fontSize: 11,
+      fontSize: 11.5,
+      includeFontPadding: false,
+      textAlignVertical: 'center',
     },
     clearFiltersBtn: {
       paddingHorizontal: 8,

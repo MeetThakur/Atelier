@@ -22,73 +22,79 @@ export function CategoryChips({ value, onChange, counts }: Props) {
   };
 
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      style={{ flexGrow: 0 }}
-      contentContainerStyle={styles.row}
-    >
-      {categories.map((item) => {
-        const isSelected = item === value;
-        const count = counts ? counts[item] : undefined;
+    <View style={styles.container}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.row}
+      >
+        {categories.map((item) => {
+          const isSelected = item === value;
+          const count = counts ? counts[item] : undefined;
 
-        return (
-          <Pressable
-            key={item}
-            onPress={() => handleSelect(item)}
-            hitSlop={4}
-            style={({ pressed }) => [
-              styles.chip,
-              isSelected ? styles.chipSelected : styles.chipUnselected,
-              pressed && styles.pressed,
-            ]}
-          >
-            <Text
-              style={[
-                styles.chipText,
-                isSelected ? styles.chipTextSelected : styles.chipTextUnselected,
+          return (
+            <Pressable
+              key={item}
+              onPress={() => handleSelect(item)}
+              hitSlop={6}
+              style={({ pressed }) => [
+                styles.chip,
+                isSelected ? styles.chipSelected : styles.chipUnselected,
+                pressed && styles.pressed,
               ]}
             >
-              {item}
-            </Text>
-            {count !== undefined && (
-              <View
+              <Text
                 style={[
-                  styles.countBadge,
-                  isSelected ? styles.countBadgeSelected : styles.countBadgeUnselected,
+                  styles.chipText,
+                  isSelected ? styles.chipTextSelected : styles.chipTextUnselected,
                 ]}
               >
-                <Text
+                {item}
+              </Text>
+              {count !== undefined && (
+                <View
                   style={[
-                    styles.countText,
-                    isSelected ? styles.countTextSelected : styles.countTextUnselected,
+                    styles.countBadge,
+                    isSelected ? styles.countBadgeSelected : styles.countBadgeUnselected,
                   ]}
                 >
-                  {count}
-                </Text>
-              </View>
-            )}
-          </Pressable>
-        );
-      })}
-    </ScrollView>
+                  <Text
+                    style={[
+                      styles.countText,
+                      isSelected ? styles.countTextSelected : styles.countTextUnselected,
+                    ]}
+                  >
+                    {count}
+                  </Text>
+                </View>
+              )}
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+    </View>
   );
 }
 
 const makeStyles = (c: Palette) =>
   StyleSheet.create({
+    container: {
+      paddingVertical: 6,
+    },
     row: {
+      flexDirection: 'row',
+      alignItems: 'center',
       gap: 8,
-      paddingTop: 10,
-      paddingBottom: 4,
+      paddingVertical: 4,
+      paddingRight: 12,
     },
     chip: {
       flexDirection: 'row',
       alignItems: 'center',
-      height: 36,
+      height: 40,
       borderRadius: shapes.full,
-      paddingHorizontal: 14,
-      gap: 6,
+      paddingHorizontal: 16,
+      gap: 8,
       borderWidth: 1,
     },
     chipSelected: {
@@ -100,7 +106,9 @@ const makeStyles = (c: Palette) =>
       borderColor: c.outlineVariant,
     },
     chipText: {
-      fontSize: 13,
+      fontSize: 13.5,
+      includeFontPadding: false,
+      textAlignVertical: 'center',
     },
     chipTextSelected: {
       fontFamily: fonts.bold,
@@ -111,10 +119,10 @@ const makeStyles = (c: Palette) =>
       color: c.onSurfaceVariant,
     },
     countBadge: {
-      minWidth: 18,
-      height: 18,
+      minWidth: 20,
+      height: 20,
       borderRadius: shapes.full,
-      paddingHorizontal: 5,
+      paddingHorizontal: 6,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -126,7 +134,9 @@ const makeStyles = (c: Palette) =>
     },
     countText: {
       fontFamily: fonts.extraBold,
-      fontSize: 10,
+      fontSize: 10.5,
+      includeFontPadding: false,
+      textAlignVertical: 'center',
     },
     countTextSelected: {
       color: c.primary,
