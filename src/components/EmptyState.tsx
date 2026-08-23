@@ -26,9 +26,9 @@ export function EmptyState({ title, message, onAction, actionLabel, isFilterResu
     <View style={styles.wrap}>
       <View style={styles.iconCircle}>
         <Ionicons
-          name={isFilterResult ? 'search-outline' : 'shirt-outline'}
-          size={36}
-          color={c.primary}
+          name={isFilterResult ? 'filter-outline' : 'sparkles-outline'}
+          size={32}
+          color={c.onSurface}
         />
       </View>
       <Text style={styles.title}>{title}</Text>
@@ -39,7 +39,7 @@ export function EmptyState({ title, message, onAction, actionLabel, isFilterResu
           onPress={handleAction}
           style={({ pressed }) => [styles.actionButton, pressed && styles.pressed]}
         >
-          <Ionicons name="add" size={18} color={c.onPrimary} />
+          <Ionicons name="add" size={16} color={c.onPrimary} />
           <Text style={styles.actionButtonText}>{actionLabel}</Text>
         </Pressable>
       )}
@@ -51,24 +51,26 @@ const makeStyles = (c: Palette) =>
   StyleSheet.create({
     wrap: {
       alignItems: 'center',
-      paddingTop: 60,
+      paddingTop: 56,
       paddingBottom: 40,
       paddingHorizontal: 36,
     },
     iconCircle: {
-      width: 80,
-      height: 80,
+      width: 72,
+      height: 72,
       borderRadius: shapes.full,
-      backgroundColor: c.primaryContainer,
+      backgroundColor: c.surfaceContainerLow,
+      borderWidth: 1,
+      borderColor: c.outlineVariant,
       alignItems: 'center',
       justifyContent: 'center',
-      marginBottom: 18,
+      marginBottom: 16,
     },
     title: {
       fontFamily: fonts.displayBold,
       color: c.onSurface,
-      fontSize: 20,
-      letterSpacing: -0.3,
+      fontSize: 22,
+      letterSpacing: -0.4,
       marginBottom: 6,
       textAlign: 'center',
     },
@@ -77,23 +79,23 @@ const makeStyles = (c: Palette) =>
       fontFamily: fonts.medium,
       color: c.onSurfaceVariant,
       fontSize: 14,
-      lineHeight: 20,
-      maxWidth: 270,
+      lineHeight: 21,
+      maxWidth: 280,
     },
     actionButton: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 8,
-      marginTop: 24,
-      paddingHorizontal: 22,
-      height: 44,
+      gap: 6,
+      marginTop: 22,
+      paddingHorizontal: 20,
+      height: 42,
       borderRadius: shapes.full,
       backgroundColor: c.primary,
     },
     actionButtonText: {
       fontFamily: fonts.bold,
       color: c.onPrimary,
-      fontSize: 14,
+      fontSize: 13.5,
     },
     pressed: {
       opacity: 0.8,

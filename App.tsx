@@ -1,25 +1,24 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, FlatList, StyleSheet, Text, View } from 'react-native';
+import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
 import {
   useFonts,
-  Outfit_400Regular,
-  Outfit_500Medium,
-  Outfit_600SemiBold,
-  Outfit_700Bold,
-  Outfit_800ExtraBold,
-} from '@expo-google-fonts/outfit';
+  Syne_600SemiBold,
+  Syne_700Bold,
+  Syne_800ExtraBold,
+} from '@expo-google-fonts/syne';
 import {
-  PlusJakartaSans_400Regular,
-  PlusJakartaSans_500Medium,
-  PlusJakartaSans_600SemiBold,
-  PlusJakartaSans_700Bold,
-  PlusJakartaSans_800ExtraBold,
-} from '@expo-google-fonts/plus-jakarta-sans';
+  BricolageGrotesque_400Regular,
+  BricolageGrotesque_500Medium,
+  BricolageGrotesque_600SemiBold,
+  BricolageGrotesque_700Bold,
+  BricolageGrotesque_800ExtraBold,
+} from '@expo-google-fonts/bricolage-grotesque';
 import { Header } from './src/components/Header';
 import { SearchBar } from './src/components/SearchBar';
 import { CategoryChips } from './src/components/CategoryChips';
+import { FilterModal } from './src/components/FilterModal';
 import { SectionHeader } from './src/components/SectionHeader';
 import { ItemCard } from './src/components/ItemCard';
 import { EmptyState } from './src/components/EmptyState';
@@ -27,8 +26,10 @@ import { Fab } from './src/components/Fab';
 import { AddItemModal } from './src/components/AddItemModal';
 import { useCloset } from './src/hooks/useCloset';
 import { greeting, todayISO } from './src/lib/format';
-import type { Category, Item, SortMode } from './src/types';
+import { COLOR_PALETTE, SEASON_ICONS } from './src/constants';
+import type { Category, Item, Season, SortMode } from './src/types';
 import { useTheme, fonts, shapes, type Palette } from './src/theme';
+import { Ionicons } from '@expo/vector-icons';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -36,16 +37,14 @@ const SORT_ORDER: SortMode[] = ['newest', 'favorites', 'worn', 'name'];
 
 export default function App() {
   const [fontsLoaded, fontError] = useFonts({
-    Outfit_400Regular,
-    Outfit_500Medium,
-    Outfit_600SemiBold,
-    Outfit_700Bold,
-    Outfit_800ExtraBold,
-    PlusJakartaSans_400Regular,
-    PlusJakartaSans_500Medium,
-    PlusJakartaSans_600SemiBold,
-    PlusJakartaSans_700Bold,
-    PlusJakartaSans_800ExtraBold,
+    Syne_600SemiBold,
+    Syne_700Bold,
+    Syne_800ExtraBold,
+    BricolageGrotesque_400Regular,
+    BricolageGrotesque_500Medium,
+    BricolageGrotesque_600SemiBold,
+    BricolageGrotesque_700Bold,
+    BricolageGrotesque_800ExtraBold,
   });
 
   const c = useTheme();
@@ -61,9 +60,12 @@ export default function App() {
   } = useCloset();
 
   const [category, setCategory] = useState<Category>('All');
+  const [season, setSeason] = useState<Season | 'All'>('All');
+  const [colorId, setColorId] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const [filterModalOpen, setFilterModalOpen] = useState(false);
   const [sortMode, setSortMode] = useState<SortMode>('newest');
 
   const [ready, setReady] = useState(false);
@@ -101,11 +103,21 @@ export default function App() {
     return counts;
   }, [items]);
 
+  const selectedColor = useMemo(
+    () => COLOR_PALETTE.find((col) => col.id === colorId),
+    [colorId]
+  );
+
   const visibleItems = useMemo(() => {
     let list = items.filter((item) => {
       const inCategory = category === 'All' || item.category === category;
+      const inSeason =
+        season === 'All' ||
+        item.season === season ||
+        (!item.season && season === 'All-Season');
+      const inColor = !colorId || item.colorHex === selectedColor?.hex;
       const inQuery = item.name.toLowerCase().includes(query.toLowerCase());
-      return inCategory && inQuery;
+      return inCategory && inSeason && inColor && inQuery;
     });
 
     if (sortMode === 'favorites') {
@@ -119,7 +131,7 @@ export default function App() {
     }
 
     return list;
-  }, [items, category, query, sortMode, today]);
+  }, [items, category, season, colorId, selectedColor, query, sortMode, today]);
 
   const cycleSortMode = () => {
     const currentIndex = SORT_ORDER.indexOf(sortMode);
@@ -127,8 +139,18 @@ export default function App() {
     setSortMode(SORT_ORDER[nextIndex]);
   };
 
+  const clearAllFilters = () => {
+    setQuery('');
+    setCategory('All');
+    setSeason('All');
+    setColorId(null);
+  };
+
+  const activeFilterCount = (season !== 'All' ? 1 : 0) + (colorId !== null ? 1 : 0);
+  const hasActiveFilters = Boolean(query) || category !== 'All' || activeFilterCount > 0;
+
   const confirmRemove = (item: Item) => {
-    Alert.alert('Remove Piece', `"${item.name}" will be deleted from your kloset.`, [
+    Alert.alert('Remove Piece', `"${item.name}" will be deleted from your atelier.`, [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Remove', style: 'destructive', onPress: () => removeItem(item) },
     ]);
@@ -170,11 +192,59 @@ export default function App() {
             counts={loaded ? categoryCounts : undefined}
           />
 
+          {/* Active Sub-Filter Badges (only visible when sub-filters applied) */}
+          {activeFilterCount > 0 && (
+            <View style={styles.activeFiltersRow}>
+              {season !== 'All' && (
+                <Pressable
+                  onPress={() => setSeason('All')}
+                  style={styles.activeFilterPill}
+                >
+                  <Ionicons
+                    name={SEASON_ICONS[season]}
+                    size={12}
+                    color={c.onPrimaryContainer}
+                  />
+                  <Text style={styles.activeFilterText}>{season}</Text>
+                  <Ionicons name="close" size={12} color={c.onPrimaryContainer} />
+                </Pressable>
+              )}
+
+              {selectedColor && (
+                <Pressable
+                  onPress={() => setColorId(null)}
+                  style={styles.activeFilterPill}
+                >
+                  <View
+                    style={[
+                      styles.activeColorDot,
+                      { backgroundColor: selectedColor.hex },
+                    ]}
+                  />
+                  <Text style={styles.activeFilterText}>{selectedColor.name}</Text>
+                  <Ionicons name="close" size={12} color={c.onPrimaryContainer} />
+                </Pressable>
+              )}
+
+              <Pressable
+                onPress={() => {
+                  setSeason('All');
+                  setColorId(null);
+                }}
+                style={styles.clearFiltersBtn}
+              >
+                <Text style={styles.clearFiltersText}>Clear</Text>
+              </Pressable>
+            </View>
+          )}
+
           <SectionHeader
             title={category === 'All' ? 'Your pieces' : category}
             count={visibleItems.length}
             sortMode={sortMode}
             onCycleSort={cycleSortMode}
+            activeFilterCount={activeFilterCount}
+            onOpenFilter={() => setFilterModalOpen(true)}
           />
 
           <FlatList
@@ -185,20 +255,17 @@ export default function App() {
             contentContainerStyle={styles.grid}
             showsVerticalScrollIndicator={false}
             ListEmptyComponent={
-              query || category !== 'All' ? (
+              hasActiveFilters ? (
                 <EmptyState
                   title="No pieces found"
-                  message="No pieces match your search or filter."
+                  message="No pieces match your current filters."
                   isFilterResult
-                  onAction={() => {
-                    setQuery('');
-                    setCategory('All');
-                  }}
-                  actionLabel="Clear filters"
+                  onAction={clearAllFilters}
+                  actionLabel="Clear all filters"
                 />
               ) : (
                 <EmptyState
-                  title="An empty kloset awaits"
+                  title="An empty atelier awaits"
                   message="Tap below to photograph your first piece."
                   onAction={() => setModalOpen(true)}
                   actionLabel="Add piece"
@@ -222,6 +289,20 @@ export default function App() {
           visible={modalOpen}
           onClose={() => setModalOpen(false)}
           onAdd={addItem}
+        />
+
+        <FilterModal
+          visible={filterModalOpen}
+          onClose={() => setFilterModalOpen(false)}
+          selectedSeason={season}
+          onSeasonChange={setSeason}
+          selectedColorId={colorId}
+          onColorChange={setColorId}
+          onClearAll={() => {
+            setSeason('All');
+            setColorId(null);
+          }}
+          resultCount={visibleItems.length}
         />
       </SafeAreaView>
     </SafeAreaProvider>
@@ -257,5 +338,40 @@ const makeStyles = (c: Palette) =>
     },
     grid: {
       paddingBottom: 110,
+    },
+    activeFiltersRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      paddingTop: 6,
+      paddingBottom: 2,
+    },
+    activeFilterPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+      height: 28,
+      paddingHorizontal: 10,
+      borderRadius: shapes.full,
+      backgroundColor: c.primaryContainer,
+    },
+    activeFilterText: {
+      fontFamily: fonts.bold,
+      color: c.onPrimaryContainer,
+      fontSize: 11,
+    },
+    activeColorDot: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+    },
+    clearFiltersBtn: {
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+    },
+    clearFiltersText: {
+      fontFamily: fonts.bold,
+      color: c.primary,
+      fontSize: 11.5,
     },
   });

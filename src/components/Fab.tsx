@@ -18,12 +18,12 @@ export function Fab({ onPress }: Props) {
 
   return (
     <Pressable
-      accessibilityLabel="Add clothing item"
+      accessibilityLabel="Add clothing piece"
       onPress={handlePress}
       style={({ pressed }) => [styles.fab, pressed && styles.pressed]}
     >
-      <Ionicons name="add" size={22} color={c.onPrimaryContainer} />
-      <Text style={styles.label}>Add piece</Text>
+      <Ionicons name="add" size={20} color={c.onPrimary} />
+      <Text style={styles.label}>Add Piece</Text>
     </Pressable>
   );
 }
@@ -36,25 +36,25 @@ const makeStyles = (c: Palette) =>
       bottom: 28,
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 8,
-      height: 56,
+      gap: 6,
+      height: 50,
       paddingHorizontal: 20,
-      borderRadius: shapes.lg,
-      backgroundColor: c.primaryContainer,
+      borderRadius: shapes.full,
+      backgroundColor: c.primary,
       shadowColor: '#000',
-      shadowOpacity: 0.18,
-      shadowRadius: 10,
-      shadowOffset: { width: 0, height: 4 },
-      elevation: 4,
+      shadowOpacity: 0.22,
+      shadowRadius: 12,
+      shadowOffset: { width: 0, height: 6 },
+      elevation: 6,
     },
     label: {
       fontFamily: fonts.bold,
-      color: c.onPrimaryContainer,
-      fontSize: 14.5,
-      letterSpacing: 0.1,
+      color: c.onPrimary,
+      fontSize: 14,
+      letterSpacing: 0.2,
     },
     pressed: {
-      transform: [{ scale: 0.96 }],
-      opacity: 0.85,
+      transform: [{ scale: 0.95 }],
+      opacity: 0.9,
     },
   });

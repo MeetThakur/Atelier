@@ -9,6 +9,8 @@ type Props = {
   count: number;
   sortMode?: SortMode;
   onCycleSort?: () => void;
+  activeFilterCount?: number;
+  onOpenFilter?: () => void;
 };
 
 const SORT_LABELS: Record<SortMode, { label: string; icon: keyof typeof Ionicons.glyphMap }> = {
@@ -18,7 +20,14 @@ const SORT_LABELS: Record<SortMode, { label: string; icon: keyof typeof Ionicons
   name: { label: 'A to Z', icon: 'text-outline' },
 };
 
-export function SectionHeader({ title, count, sortMode = 'newest', onCycleSort }: Props) {
+export function SectionHeader({
+  title,
+  count,
+  sortMode = 'newest',
+  onCycleSort,
+  activeFilterCount = 0,
+  onOpenFilter,
+}: Props) {
   const c = useTheme();
   const styles = makeStyles(c);
 
@@ -29,8 +38,16 @@ export function SectionHeader({ title, count, sortMode = 'newest', onCycleSort }
     }
   };
 
+  const handleFilterPress = () => {
+    if (onOpenFilter) {
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      onOpenFilter();
+    }
+  };
+
   const sortInfo = SORT_LABELS[sortMode];
   const isCustomSort = sortMode !== 'newest';
+  const hasFilters = activeFilterCount > 0;
 
   return (
     <View style={styles.row}>
@@ -41,31 +58,59 @@ export function SectionHeader({ title, count, sortMode = 'newest', onCycleSort }
         </View>
       </View>
 
-      {onCycleSort && (
-        <Pressable
-          onPress={handleSortPress}
-          hitSlop={8}
-          style={({ pressed }) => [
-            styles.sortChip,
-            isCustomSort && styles.sortChipActive,
-            pressed && styles.pressed,
-          ]}
-        >
-          <Ionicons
-            name={sortInfo.icon}
-            size={14}
-            color={isCustomSort ? c.onPrimaryContainer : c.onSurfaceVariant}
-          />
-          <Text
-            style={[
-              styles.sortText,
-              isCustomSort ? styles.sortTextActive : styles.sortTextInactive,
+      <View style={styles.rightActions}>
+        {onOpenFilter && (
+          <Pressable
+            onPress={handleFilterPress}
+            hitSlop={8}
+            style={({ pressed }) => [
+              styles.actionChip,
+              hasFilters && styles.actionChipActive,
+              pressed && styles.pressed,
             ]}
           >
-            {sortInfo.label}
-          </Text>
-        </Pressable>
-      )}
+            <Ionicons
+              name={hasFilters ? 'options' : 'options-outline'}
+              size={13}
+              color={hasFilters ? c.onPrimaryContainer : c.onSurfaceVariant}
+            />
+            <Text
+              style={[
+                styles.actionText,
+                hasFilters ? styles.actionTextActive : styles.actionTextInactive,
+              ]}
+            >
+              {hasFilters ? `Filters (${activeFilterCount})` : 'Filter'}
+            </Text>
+          </Pressable>
+        )}
+
+        {onCycleSort && (
+          <Pressable
+            onPress={handleSortPress}
+            hitSlop={8}
+            style={({ pressed }) => [
+              styles.actionChip,
+              isCustomSort && styles.actionChipActive,
+              pressed && styles.pressed,
+            ]}
+          >
+            <Ionicons
+              name={sortInfo.icon}
+              size={13}
+              color={isCustomSort ? c.onPrimaryContainer : c.onSurfaceVariant}
+            />
+            <Text
+              style={[
+                styles.actionText,
+                isCustomSort ? styles.actionTextActive : styles.actionTextInactive,
+              ]}
+            >
+              {sortInfo.label}
+            </Text>
+          </Pressable>
+        )}
+      </View>
     </View>
   );
 }
@@ -76,8 +121,8 @@ const makeStyles = (c: Palette) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingTop: 18,
-      paddingBottom: 12,
+      paddingTop: 16,
+      paddingBottom: 10,
     },
     left: {
       flexDirection: 'row',
@@ -101,29 +146,34 @@ const makeStyles = (c: Palette) =>
       color: c.onSurfaceVariant,
       fontSize: 12,
     },
-    sortChip: {
+    rightActions: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 6,
-      paddingHorizontal: 12,
-      paddingVertical: 6,
+    },
+    actionChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
       borderRadius: shapes.sm,
       backgroundColor: c.surfaceContainerLow,
       borderWidth: 1,
       borderColor: c.outlineVariant,
     },
-    sortChipActive: {
+    actionChipActive: {
       backgroundColor: c.primaryContainer,
       borderColor: 'transparent',
     },
-    sortText: {
-      fontSize: 12.5,
+    actionText: {
+      fontSize: 12,
     },
-    sortTextInactive: {
+    actionTextInactive: {
       fontFamily: fonts.semiBold,
       color: c.onSurfaceVariant,
     },
-    sortTextActive: {
+    actionTextActive: {
       fontFamily: fonts.bold,
       color: c.onPrimaryContainer,
     },

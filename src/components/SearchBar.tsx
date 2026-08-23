@@ -13,12 +13,12 @@ export function SearchBar({ value, onChange }: Props) {
 
   return (
     <View style={styles.wrap}>
-      <Ionicons name="search" size={20} color={c.onSurfaceVariant} style={styles.icon} />
+      <Ionicons name="search-outline" size={18} color={c.onSurfaceVariant} style={styles.icon} />
       <TextInput
         autoFocus
         value={value}
         onChangeText={onChange}
-        placeholder="Search wardrobe…"
+        placeholder="Search pieces, colors, seasons…"
         placeholderTextColor={c.onSurfaceVariant}
         style={styles.input}
         returnKeyType="search"
@@ -30,7 +30,7 @@ export function SearchBar({ value, onChange }: Props) {
           hitSlop={10}
           style={({ pressed }) => [styles.clearButton, pressed && styles.pressed]}
         >
-          <Ionicons name="close-circle" size={20} color={c.onSurfaceVariant} />
+          <Ionicons name="close-circle" size={18} color={c.onSurfaceVariant} />
         </Pressable>
       )}
     </View>
@@ -42,12 +42,14 @@ const makeStyles = (c: Palette) =>
     wrap: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: c.surfaceContainerHigh,
+      backgroundColor: c.surfaceContainerLow,
       borderRadius: shapes.full,
-      height: 52,
+      height: 48,
       paddingHorizontal: 16,
-      gap: 12,
-      marginTop: 14,
+      gap: 10,
+      marginTop: 8,
+      borderWidth: 1,
+      borderColor: c.outlineVariant,
     },
     icon: {
       marginTop: 1,
@@ -56,7 +58,7 @@ const makeStyles = (c: Palette) =>
       flex: 1,
       fontFamily: fonts.medium,
       color: c.onSurface,
-      fontSize: 16,
+      fontSize: 14.5,
       height: '100%',
     },
     clearButton: {

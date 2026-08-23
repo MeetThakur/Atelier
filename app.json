@@ -1,16 +1,16 @@
 {
   "expo": {
-    "name": "Kloset",
-    "slug": "kloset",
+    "name": "Atelier",
+    "slug": "atelier",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "icon": "./assets/icon.png",
     "android": {
-      "package": "com.kloset.app",
+      "package": "com.atelier.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#FAF7FD"
+        "backgroundColor": "#FAF8F5"
       }
     },
     "plugins": [
@@ -19,7 +19,7 @@
         {
           "image": "./assets/splash-icon.png",
           "imageWidth": 160,
-          "backgroundColor": "#FAF7FD"
+          "backgroundColor": "#FAF8F5"
         }
       ],
       "expo-font"

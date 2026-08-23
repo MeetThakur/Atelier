@@ -18,15 +18,15 @@ export function Header({ greeting, totalPieces, searchActive, onToggleSearch }: 
     <View style={styles.header}>
       <View style={styles.leftCol}>
         <View style={styles.metaRow}>
-          <Text style={styles.dateText}>{formatHeaderDate()}</Text>
-          <Text style={styles.greetingText}>• {greeting}</Text>
+          <Text style={styles.dateText}>{formatHeaderDate().toUpperCase()}</Text>
+          <Text style={styles.greetingText}>• {greeting.toUpperCase()}</Text>
         </View>
         <View style={styles.titleRow}>
-          <Text style={styles.title}>Kloset</Text>
+          <Text style={styles.title}>Atelier</Text>
           {totalPieces !== null && totalPieces !== undefined && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>
-                {totalPieces} {totalPieces === 1 ? 'item' : 'items'}
+            <View style={styles.counterCapsule}>
+              <Text style={styles.counterText}>
+                {totalPieces} {totalPieces === 1 ? 'PIECE' : 'PIECES'}
               </Text>
             </View>
           )}
@@ -35,7 +35,7 @@ export function Header({ greeting, totalPieces, searchActive, onToggleSearch }: 
 
       <View style={styles.actionsRow}>
         <Pressable
-          accessibilityLabel="Search kloset"
+          accessibilityLabel="Search archive"
           onPress={onToggleSearch}
           style={({ pressed }) => [
             styles.iconButton,
@@ -44,9 +44,9 @@ export function Header({ greeting, totalPieces, searchActive, onToggleSearch }: 
           ]}
         >
           <Ionicons
-            name={searchActive ? 'close' : 'search'}
-            size={22}
-            color={searchActive ? c.onPrimary : c.onSurfaceVariant}
+            name={searchActive ? 'close' : 'search-outline'}
+            size={20}
+            color={searchActive ? c.onPrimary : c.onSurface}
           />
         </Pressable>
       </View>
@@ -60,8 +60,8 @@ const makeStyles = (c: Palette) =>
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'flex-end',
-      paddingTop: 16,
-      paddingBottom: 8,
+      paddingTop: 18,
+      paddingBottom: 10,
     },
     leftCol: {
       flex: 1,
@@ -70,58 +70,64 @@ const makeStyles = (c: Palette) =>
       flexDirection: 'row',
       alignItems: 'center',
       gap: 6,
-      marginBottom: 4,
+      marginBottom: 3,
     },
     dateText: {
-      fontFamily: fonts.semiBold,
-      color: c.primary,
-      fontSize: 12,
-      letterSpacing: 0.2,
+      fontFamily: fonts.bold,
+      color: c.tertiary,
+      fontSize: 10,
+      letterSpacing: 1.2,
     },
     greetingText: {
       fontFamily: fonts.medium,
       color: c.onSurfaceVariant,
-      fontSize: 12,
+      fontSize: 10,
+      letterSpacing: 0.8,
     },
     titleRow: {
       flexDirection: 'row',
-      alignItems: 'center',
+      alignItems: 'baseline',
       gap: 12,
     },
     title: {
       fontFamily: fonts.displayBold,
       color: c.onSurface,
-      fontSize: 32,
-      letterSpacing: -0.5,
+      fontSize: 34,
+      letterSpacing: -0.8,
     },
-    badge: {
-      backgroundColor: c.secondaryContainer,
+    counterCapsule: {
+      backgroundColor: c.primaryContainer,
       borderRadius: shapes.full,
-      paddingHorizontal: 12,
-      paddingVertical: 4,
+      paddingHorizontal: 9,
+      paddingVertical: 3,
     },
-    badgeText: {
+    counterText: {
       fontFamily: fonts.bold,
-      color: c.onSecondaryContainer,
-      fontSize: 12,
+      color: c.onPrimaryContainer,
+      fontSize: 9.5,
+      letterSpacing: 0.8,
     },
     actionsRow: {
       flexDirection: 'row',
       alignItems: 'center',
+      paddingBottom: 4,
     },
     iconButton: {
-      width: 48,
-      height: 48,
+      width: 42,
+      height: 42,
       borderRadius: shapes.full,
-      backgroundColor: c.surfaceContainerHigh,
+      backgroundColor: c.surfaceContainerLow,
+      borderWidth: 1,
+      borderColor: c.outlineVariant,
       alignItems: 'center',
       justifyContent: 'center',
     },
     iconButtonActive: {
       backgroundColor: c.primary,
+      borderColor: c.primary,
     },
     pressed: {
-      opacity: 0.8,
+      opacity: 0.75,
       transform: [{ scale: 0.94 }],
     },
   });

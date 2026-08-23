@@ -1,89 +1,113 @@
 import { useColorScheme } from 'react-native';
 
 export const fonts = {
-  regular: 'PlusJakartaSans_400Regular',
-  medium: 'PlusJakartaSans_500Medium',
-  semiBold: 'PlusJakartaSans_600SemiBold',
-  bold: 'PlusJakartaSans_700Bold',
-  extraBold: 'PlusJakartaSans_800ExtraBold',
-  displayMedium: 'Outfit_500Medium',
-  displaySemiBold: 'Outfit_600SemiBold',
-  displayBold: 'Outfit_700Bold',
-  displayExtraBold: 'Outfit_800ExtraBold',
+  regular: 'BricolageGrotesque_400Regular',
+  medium: 'BricolageGrotesque_500Medium',
+  semiBold: 'BricolageGrotesque_600SemiBold',
+  bold: 'BricolageGrotesque_700Bold',
+  extraBold: 'BricolageGrotesque_800ExtraBold',
+  displayMedium: 'Syne_600SemiBold',
+  displaySemiBold: 'Syne_700Bold',
+  displayBold: 'Syne_800ExtraBold',
+  displayExtraBold: 'Syne_800ExtraBold',
 } as const;
 
 export type Fonts = typeof fonts;
 
 export const shapes = {
-  xs: 4,
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 20,
-  xxl: 28,
+  xs: 6,
+  sm: 10,
+  md: 14,
+  lg: 18,
+  xl: 24,
+  xxl: 32,
   full: 9999,
 } as const;
 
 export type Shapes = typeof shapes;
 
+// Editorial Minimalist Light Palette (Warm Alabaster + Espresso + Champagne)
 export const light = {
-  primary: '#6750A4',
-  onPrimary: '#FFFFFF',
-  primaryContainer: '#EADDFF',
-  onPrimaryContainer: '#21005D',
-  secondary: '#625B71',
+  primary: '#1A1816',
+  onPrimary: '#FAF8F5',
+  primaryContainer: '#EDE8E1',
+  onPrimaryContainer: '#1A1816',
+
+  secondary: '#8C8275',
   onSecondary: '#FFFFFF',
-  secondaryContainer: '#E8DEF8',
-  onSecondaryContainer: '#1D192B',
-  tertiary: '#7D5260',
+  secondaryContainer: '#F2EFEB',
+  onSecondaryContainer: '#2D2924',
+
+  tertiary: '#C47B57',
   onTertiary: '#FFFFFF',
-  tertiaryContainer: '#FFD8E4',
-  onTertiaryContainer: '#31111D',
-  error: '#B3261E',
-  errorContainer: '#F9DEDC',
-  onErrorContainer: '#410E0B',
-  surface: '#FEF7FF',
-  onSurface: '#1D1B20',
-  surfaceVariant: '#E7E0EC',
-  onSurfaceVariant: '#49454F',
+  tertiaryContainer: '#FCEEE8',
+  onTertiaryContainer: '#66321A',
+
+  accent: '#D4AF37',
+  onAccent: '#1A1816',
+  accentContainer: '#FDF7E7',
+
+  error: '#BA3B34',
+  errorContainer: '#FCEBEA',
+  onErrorContainer: '#54120E',
+
+  surface: '#FAF8F5',
+  onSurface: '#1A1816',
+  surfaceVariant: '#EFECE6',
+  onSurfaceVariant: '#78726A',
+
   surfaceContainerLowest: '#FFFFFF',
-  surfaceContainerLow: '#F7F2FA',
-  surfaceContainer: '#F3EDF7',
-  surfaceContainerHigh: '#ECE6F0',
-  surfaceContainerHighest: '#E6E0E9',
-  outline: '#79747E',
-  outlineVariant: '#CAC4D0',
-  scrim: 'rgba(0, 0, 0, 0.4)',
+  surfaceContainerLow: '#F5F2EB',
+  surfaceContainer: '#EFECE6',
+  surfaceContainerHigh: '#E8E4DC',
+  surfaceContainerHighest: '#DFDAD0',
+
+  outline: '#C4BEB4',
+  outlineVariant: '#E5E1D8',
+  scrim: 'rgba(18, 16, 14, 0.45)',
+  glass: 'rgba(255, 255, 255, 0.75)',
 } as const;
 
+// Editorial Minimalist Dark Palette (Obsidian Noir + Warm Ivory + Soft Amber)
 export const dark = {
-  primary: '#D0BCFF',
-  onPrimary: '#381E72',
-  primaryContainer: '#4F378B',
-  onPrimaryContainer: '#EADDFF',
-  secondary: '#CCC2DC',
-  onSecondary: '#332D41',
-  secondaryContainer: '#4A4458',
-  onSecondaryContainer: '#E8DEF8',
-  tertiary: '#EFB8C8',
-  onTertiary: '#492532',
-  tertiaryContainer: '#633B48',
-  onTertiaryContainer: '#FFD8E4',
-  error: '#F2B8B5',
-  errorContainer: '#8C1D18',
-  onErrorContainer: '#F9DEDC',
-  surface: '#141218',
-  onSurface: '#E6E0E9',
-  surfaceVariant: '#49454F',
-  onSurfaceVariant: '#CAC4D0',
-  surfaceContainerLowest: '#0F0D13',
-  surfaceContainerLow: '#1D1B20',
-  surfaceContainer: '#211F26',
-  surfaceContainerHigh: '#2B2930',
-  surfaceContainerHighest: '#36343B',
-  outline: '#938F99',
-  outlineVariant: '#49454F',
-  scrim: 'rgba(0, 0, 0, 0.6)',
+  primary: '#F5F2EB',
+  onPrimary: '#121214',
+  primaryContainer: '#28272E',
+  onPrimaryContainer: '#F5F2EB',
+
+  secondary: '#A69E94',
+  onSecondary: '#121214',
+  secondaryContainer: '#232228',
+  onSecondaryContainer: '#E6E1D8',
+
+  tertiary: '#E08E79',
+  onTertiary: '#121214',
+  tertiaryContainer: '#38221C',
+  onTertiaryContainer: '#FCEEE8',
+
+  accent: '#E6C594',
+  onAccent: '#121214',
+  accentContainer: '#362B1C',
+
+  error: '#E87A74',
+  errorContainer: '#451715',
+  onErrorContainer: '#FCEBEA',
+
+  surface: '#0F0F12',
+  onSurface: '#F5F2EB',
+  surfaceVariant: '#1E1E24',
+  onSurfaceVariant: '#969087',
+
+  surfaceContainerLowest: '#09090B',
+  surfaceContainerLow: '#15151A',
+  surfaceContainer: '#1B1B21',
+  surfaceContainerHigh: '#24242B',
+  surfaceContainerHighest: '#2E2D36',
+
+  outline: '#3D3C46',
+  outlineVariant: '#26252E',
+  scrim: 'rgba(0, 0, 0, 0.7)',
+  glass: 'rgba(22, 22, 28, 0.8)',
 } as const;
 
 export type Palette = { [K in keyof typeof light]: string };

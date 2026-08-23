@@ -15,8 +15,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { clothingCategories } from '../constants';
-import type { ClothingCategory, NewItemDraft } from '../types';
+import { COLOR_PALETTE, SEASON_ICONS, clothingCategories, seasons } from '../constants';
+import type { ClothingCategory, ColorTag, NewItemDraft, Season } from '../types';
 import { pickImage, pickImages } from '../lib/images';
 import { useTheme, fonts, shapes, type Palette } from '../theme';
 
@@ -39,12 +39,17 @@ export function AddItemModal({ visible, onClose, onAdd }: Props) {
 
   const [name, setName] = useState('');
   const [category, setCategory] = useState<ClothingCategory>('Tops');
+  const [season, setSeason] = useState<Season>('All-Season');
+  const [selectedColor, setSelectedColor] = useState<ColorTag | null>(null);
   const [photoUris, setPhotoUris] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!visible) {
       setName('');
+      setCategory('Tops');
+      setSeason('All-Season');
+      setSelectedColor(null);
       setPhotoUris([]);
       setSaving(false);
     }
@@ -76,11 +81,28 @@ export function AddItemModal({ visible, onClose, onAdd }: Props) {
     setCategory(cat);
   };
 
+  const handleSeasonSelect = (s: Season) => {
+    void Haptics.selectionAsync();
+    setSeason(s);
+  };
+
+  const handleColorSelect = (color: ColorTag) => {
+    void Haptics.selectionAsync();
+    setSelectedColor((prev) => (prev?.id === color.id ? null : color));
+  };
+
   const handleAdd = async () => {
     if (photoUris.length === 0 || saving) return;
     setSaving(true);
     try {
-      await onAdd({ photoUris, name, category });
+      await onAdd({
+        photoUris,
+        name,
+        category,
+        season,
+        colorHex: selectedColor?.hex,
+        colorName: selectedColor?.name,
+      });
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setName('');
       setPhotoUris([]);
@@ -243,6 +265,99 @@ export function AddItemModal({ visible, onClose, onAdd }: Props) {
                   );
                 })}
               </View>
+            </View>
+
+            {/* Season Selector */}
+            <View style={styles.formSection}>
+              <Text style={styles.fieldLabel}>SEASON</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.seasonRow}
+              >
+                {seasons.map((s) => {
+                  const isSelected = s === season;
+                  const iconName = SEASON_ICONS[s];
+
+                  return (
+                    <Pressable
+                      key={s}
+                      onPress={() => handleSeasonSelect(s)}
+                      style={({ pressed }) => [
+                        styles.seasonChip,
+                        isSelected ? styles.seasonChipSelected : styles.seasonChipUnselected,
+                        pressed && styles.pressed,
+                      ]}
+                    >
+                      <Ionicons
+                        name={iconName}
+                        size={15}
+                        color={isSelected ? c.onPrimaryContainer : c.onSurfaceVariant}
+                      />
+                      <Text
+                        style={[
+                          styles.seasonChipText,
+                          isSelected
+                            ? styles.seasonChipTextSelected
+                            : styles.seasonChipTextUnselected,
+                        ]}
+                      >
+                        {s}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            </View>
+
+            {/* Color Swatches */}
+            <View style={styles.formSection}>
+              <View style={styles.fieldLabelRow}>
+                <Text style={styles.fieldLabel}>COLOR</Text>
+                {selectedColor && (
+                  <Text style={styles.selectedColorLabel}>{selectedColor.name}</Text>
+                )}
+              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.colorSwatchRow}
+              >
+                {COLOR_PALETTE.map((item) => {
+                  const isSelected = selectedColor?.id === item.id;
+                  const isLightColor =
+                    item.hex === '#FDFCFA' || item.hex === '#D2B48C' || item.hex === '#DFA3AC';
+
+                  return (
+                    <Pressable
+                      key={item.id}
+                      onPress={() => handleColorSelect(item)}
+                      accessibilityLabel={item.name}
+                      style={({ pressed }) => [
+                        styles.colorSwatchRing,
+                        isSelected && styles.colorSwatchRingSelected,
+                        pressed && styles.pressed,
+                      ]}
+                    >
+                      <View
+                        style={[
+                          styles.colorSwatchFill,
+                          { backgroundColor: item.hex },
+                          isLightColor && { borderWidth: 1, borderColor: c.outlineVariant },
+                        ]}
+                      >
+                        {isSelected && (
+                          <Ionicons
+                            name="checkmark"
+                            size={14}
+                            color={isLightColor ? '#1C1B1F' : '#FFFFFF'}
+                          />
+                        )}
+                      </View>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
             </View>
 
             {/* Actions */}
@@ -447,6 +562,18 @@ const makeStyles = (c: Palette) =>
       letterSpacing: 1.1,
       marginBottom: 8,
     },
+    fieldLabelRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 8,
+    },
+    selectedColorLabel: {
+      fontFamily: fonts.bold,
+      color: c.primary,
+      fontSize: 11,
+      marginBottom: 8,
+    },
     textInput: {
       height: 52,
       borderRadius: shapes.md,
@@ -459,7 +586,7 @@ const makeStyles = (c: Palette) =>
       fontSize: 15,
     },
     categorySection: {
-      marginBottom: 24,
+      marginBottom: 18,
     },
     categoryGrid: {
       flexDirection: 'row',
@@ -496,10 +623,71 @@ const makeStyles = (c: Palette) =>
       fontFamily: fonts.semiBold,
       color: c.onSurfaceVariant,
     },
+    formSection: {
+      marginBottom: 18,
+    },
+    seasonRow: {
+      flexDirection: 'row',
+      gap: 8,
+    },
+    seasonChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      height: 38,
+      paddingHorizontal: 12,
+      borderRadius: shapes.full,
+      borderWidth: 1,
+    },
+    seasonChipSelected: {
+      backgroundColor: c.primaryContainer,
+      borderColor: 'transparent',
+    },
+    seasonChipUnselected: {
+      backgroundColor: c.surfaceContainerHigh,
+      borderColor: c.outlineVariant,
+    },
+    seasonChipText: {
+      fontSize: 12.5,
+    },
+    seasonChipTextSelected: {
+      fontFamily: fonts.bold,
+      color: c.onPrimaryContainer,
+    },
+    seasonChipTextUnselected: {
+      fontFamily: fonts.medium,
+      color: c.onSurfaceVariant,
+    },
+    colorSwatchRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      paddingVertical: 2,
+    },
+    colorSwatchRing: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 2,
+      borderColor: 'transparent',
+    },
+    colorSwatchRingSelected: {
+      borderColor: c.primary,
+    },
+    colorSwatchFill: {
+      width: 26,
+      height: 26,
+      borderRadius: 13,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     actionsRow: {
       flexDirection: 'row',
       gap: 12,
       alignItems: 'center',
+      marginTop: 8,
     },
     cancelButton: {
       flex: 1,

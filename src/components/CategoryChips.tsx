@@ -1,5 +1,4 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { categories } from '../constants';
 import type { Category } from '../types';
@@ -44,14 +43,6 @@ export function CategoryChips({ value, onChange, counts }: Props) {
               pressed && styles.pressed,
             ]}
           >
-            {isSelected && (
-              <Ionicons
-                name="checkmark"
-                size={16}
-                color={c.onSecondaryContainer}
-                style={styles.leadingIcon}
-              />
-            )}
             <Text
               style={[
                 styles.chipText,
@@ -88,67 +79,63 @@ const makeStyles = (c: Palette) =>
   StyleSheet.create({
     row: {
       gap: 8,
-      paddingTop: 16,
-      paddingBottom: 6,
+      paddingTop: 10,
+      paddingBottom: 4,
     },
     chip: {
       flexDirection: 'row',
       alignItems: 'center',
-      height: 38,
-      borderRadius: shapes.md,
+      height: 36,
+      borderRadius: shapes.full,
       paddingHorizontal: 14,
       gap: 6,
+      borderWidth: 1,
     },
     chipSelected: {
-      backgroundColor: c.secondaryContainer,
-      borderWidth: 1,
-      borderColor: 'transparent',
+      backgroundColor: c.primary,
+      borderColor: c.primary,
     },
     chipUnselected: {
       backgroundColor: c.surfaceContainerLow,
-      borderWidth: 1,
       borderColor: c.outlineVariant,
     },
-    leadingIcon: {
-      marginRight: -2,
-    },
     chipText: {
-      fontSize: 13.5,
+      fontSize: 13,
     },
     chipTextSelected: {
       fontFamily: fonts.bold,
-      color: c.onSecondaryContainer,
+      color: c.onPrimary,
     },
     chipTextUnselected: {
-      fontFamily: fonts.semiBold,
+      fontFamily: fonts.medium,
       color: c.onSurfaceVariant,
     },
     countBadge: {
-      minWidth: 20,
-      height: 20,
+      minWidth: 18,
+      height: 18,
       borderRadius: shapes.full,
-      paddingHorizontal: 6,
+      paddingHorizontal: 5,
       alignItems: 'center',
       justifyContent: 'center',
     },
     countBadgeSelected: {
-      backgroundColor: c.onSecondaryContainer,
+      backgroundColor: c.onPrimary,
     },
     countBadgeUnselected: {
       backgroundColor: c.surfaceContainerHighest,
     },
     countText: {
       fontFamily: fonts.extraBold,
-      fontSize: 11,
+      fontSize: 10,
     },
     countTextSelected: {
-      color: c.secondaryContainer,
+      color: c.primary,
     },
     countTextUnselected: {
       color: c.onSurfaceVariant,
     },
     pressed: {
       opacity: 0.75,
-      transform: [{ scale: 0.97 }],
+      transform: [{ scale: 0.96 }],
     },
   });
