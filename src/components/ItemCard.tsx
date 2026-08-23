@@ -1,5 +1,5 @@
-import { memo } from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { memo, useRef } from 'react';
+import { Animated, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import type { Item } from '../types';
@@ -22,19 +22,71 @@ export const ItemCard = memo(function ItemCard({
   const c = useTheme();
   const styles = makeStyles(c);
 
-  const handleFavoritePress = () => {
-    void Haptics.selectionAsync();
-    onToggleFavorite(item.id);
+  const lastTapRef = useRef<number>(0);
+  const singleTapTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Animated heart pop on double tap
+  const heartScale = useRef(new Animated.Value(0)).current;
+  const heartOpacity = useRef(new Animated.Value(0)).current;
+
+  const triggerHeartAnimation = () => {
+    heartScale.setValue(0);
+    heartOpacity.setValue(1);
+
+    Animated.sequence([
+      Animated.spring(heartScale, {
+        toValue: 1.25,
+        friction: 4,
+        tension: 80,
+        useNativeDriver: true,
+      }),
+      Animated.timing(heartOpacity, {
+        toValue: 0,
+        duration: 350,
+        delay: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      heartScale.setValue(0);
+    });
+  };
+
+  const handleTap = () => {
+    const now = Date.now();
+    const DOUBLE_TAP_DELAY = 280;
+
+    if (now - lastTapRef.current < DOUBLE_TAP_DELAY) {
+      // Double Tap detected!
+      if (singleTapTimeoutRef.current) {
+        clearTimeout(singleTapTimeoutRef.current);
+        singleTapTimeoutRef.current = null;
+      }
+      lastTapRef.current = 0;
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      triggerHeartAnimation();
+      onToggleFavorite(item.id);
+    } else {
+      // First tap, queue single tap for card expansion
+      lastTapRef.current = now;
+      singleTapTimeoutRef.current = setTimeout(() => {
+        onPress();
+        singleTapTimeoutRef.current = null;
+      }, DOUBLE_TAP_DELAY);
+    }
   };
 
   const handleLongPress = () => {
+    if (singleTapTimeoutRef.current) {
+      clearTimeout(singleTapTimeoutRef.current);
+      singleTapTimeoutRef.current = null;
+    }
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     onOpenMenu();
   };
 
   return (
     <Pressable
-      onPress={onPress}
+      onPress={handleTap}
       onLongPress={handleLongPress}
       delayLongPress={350}
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
@@ -47,23 +99,20 @@ export const ItemCard = memo(function ItemCard({
           <Text style={styles.categoryText}>{item.category.toUpperCase()}</Text>
         </View>
 
-        {/* Minimal Glassmorphic Favorite Button */}
-        <Pressable
-          accessibilityLabel={item.favorite ? 'Remove from favorites' : 'Add to favorites'}
-          onPress={handleFavoritePress}
-          hitSlop={8}
-          style={({ pressed }) => [
-            styles.glassIconButton,
-            item.favorite && styles.glassIconButtonActive,
-            pressed && styles.pressed,
+        {/* Double-tap Pop Animated Heart */}
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.animatedHeartWrap,
+            {
+              opacity: heartOpacity,
+              transform: [{ scale: heartScale }],
+            },
           ]}
         >
-          <Ionicons
-            name={item.favorite ? 'heart' : 'heart-outline'}
-            size={17}
-            color={item.favorite ? '#E0534C' : '#FFFFFF'}
-          />
-        </Pressable>
+          <Ionicons name="heart" size={68} color="#FFFFFF" style={styles.heartShadow} />
+          <Ionicons name="heart" size={64} color="#E0534C" style={styles.heartForeground} />
+        </Animated.View>
       </View>
 
       <View style={styles.infoArea}>
@@ -71,6 +120,9 @@ export const ItemCard = memo(function ItemCard({
           <Text style={styles.name} numberOfLines={1}>
             {item.name}
           </Text>
+          {item.favorite && (
+            <Ionicons name="heart" size={14} color="#E0534C" style={styles.miniHeart} />
+          )}
         </View>
 
         <View style={styles.metaRow}>
@@ -118,6 +170,8 @@ const makeStyles = (c: Palette) =>
       width: '100%',
       backgroundColor: c.imageBg,
       position: 'relative',
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     image: {
       width: '100%',
@@ -138,19 +192,17 @@ const makeStyles = (c: Palette) =>
       fontSize: 9,
       letterSpacing: 0.8,
     },
-    glassIconButton: {
+    animatedHeartWrap: {
       position: 'absolute',
-      right: 10,
-      top: 10,
-      width: 34,
-      height: 34,
-      borderRadius: shapes.full,
-      backgroundColor: 'rgba(18, 16, 14, 0.55)',
       alignItems: 'center',
       justifyContent: 'center',
     },
-    glassIconButtonActive: {
-      backgroundColor: 'rgba(255, 255, 255, 0.92)',
+    heartShadow: {
+      position: 'absolute',
+      opacity: 0.8,
+    },
+    heartForeground: {
+      position: 'relative',
     },
     infoArea: {
       paddingHorizontal: 12,
@@ -161,6 +213,7 @@ const makeStyles = (c: Palette) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
+      gap: 6,
     },
     name: {
       flex: 1,
@@ -168,6 +221,9 @@ const makeStyles = (c: Palette) =>
       color: c.onSurface,
       fontSize: 14.5,
       letterSpacing: 0.1,
+    },
+    miniHeart: {
+      marginLeft: 4,
     },
     metaRow: {
       flexDirection: 'row',
@@ -189,9 +245,5 @@ const makeStyles = (c: Palette) =>
       fontFamily: fonts.medium,
       color: c.onSurfaceVariant,
       fontSize: 10,
-    },
-    pressed: {
-      opacity: 0.75,
-      transform: [{ scale: 0.94 }],
     },
   });
