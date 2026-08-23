@@ -5,6 +5,8 @@ export type Season = 'All-Season' | 'Spring' | 'Summer' | 'Fall' | 'Winter';
 
 export type SortMode = 'newest' | 'favorites' | 'name';
 
+export type AppTab = 'archive' | 'canvas';
+
 export type Item = {
   id: string;
   name: string;
@@ -12,6 +14,31 @@ export type Item = {
   image: string;
   favorite?: boolean;
   season?: Season;
+};
+
+export type CanvasPiece = {
+  instanceId: string;
+  item: Item;
+  x: number;
+  y: number;
+  scale: number;
+  rotation: number;
+  zIndex: number;
+};
+
+export type SavedOutfit = {
+  id: string;
+  name: string;
+  createdAt: string;
+  pieces: {
+    itemId: string;
+    image: string;
+    name: string;
+    category: ClothingCategory;
+    x: number;
+    y: number;
+    scale: number;
+  }[];
 };
 
 export type NewItemDraft = {
