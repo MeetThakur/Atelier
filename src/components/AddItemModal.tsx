@@ -15,8 +15,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { COLOR_PALETTE, SEASON_ICONS, clothingCategories, seasons } from '../constants';
-import type { ClothingCategory, ColorTag, NewItemDraft, Season } from '../types';
+import { SEASON_ICONS, clothingCategories, seasons } from '../constants';
+import type { ClothingCategory, NewItemDraft, Season } from '../types';
 import { pickImage, pickImages } from '../lib/images';
 import { useTheme, fonts, shapes, type Palette } from '../theme';
 
@@ -40,7 +40,6 @@ export function AddItemModal({ visible, onClose, onAdd }: Props) {
   const [name, setName] = useState('');
   const [category, setCategory] = useState<ClothingCategory>('Tops');
   const [season, setSeason] = useState<Season>('All-Season');
-  const [selectedColor, setSelectedColor] = useState<ColorTag | null>(null);
   const [photoUris, setPhotoUris] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
@@ -49,7 +48,6 @@ export function AddItemModal({ visible, onClose, onAdd }: Props) {
       setName('');
       setCategory('Tops');
       setSeason('All-Season');
-      setSelectedColor(null);
       setPhotoUris([]);
       setSaving(false);
     }
@@ -86,11 +84,6 @@ export function AddItemModal({ visible, onClose, onAdd }: Props) {
     setSeason(s);
   };
 
-  const handleColorSelect = (color: ColorTag) => {
-    void Haptics.selectionAsync();
-    setSelectedColor((prev) => (prev?.id === color.id ? null : color));
-  };
-
   const handleAdd = async () => {
     if (photoUris.length === 0 || saving) return;
     setSaving(true);
@@ -100,8 +93,6 @@ export function AddItemModal({ visible, onClose, onAdd }: Props) {
         name,
         category,
         season,
-        colorHex: selectedColor?.hex,
-        colorName: selectedColor?.name,
       });
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setName('');
@@ -310,56 +301,6 @@ export function AddItemModal({ visible, onClose, onAdd }: Props) {
               </ScrollView>
             </View>
 
-            {/* Color Swatches */}
-            <View style={styles.formSection}>
-              <View style={styles.fieldLabelRow}>
-                <Text style={styles.fieldLabel}>COLOR</Text>
-                {selectedColor && (
-                  <Text style={styles.selectedColorLabel}>{selectedColor.name}</Text>
-                )}
-              </View>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.colorSwatchRow}
-              >
-                {COLOR_PALETTE.map((item) => {
-                  const isSelected = selectedColor?.id === item.id;
-                  const isLightColor =
-                    item.hex === '#FDFCFA' || item.hex === '#D2B48C' || item.hex === '#DFA3AC';
-
-                  return (
-                    <Pressable
-                      key={item.id}
-                      onPress={() => handleColorSelect(item)}
-                      accessibilityLabel={item.name}
-                      style={({ pressed }) => [
-                        styles.colorSwatchRing,
-                        isSelected && styles.colorSwatchRingSelected,
-                        pressed && styles.pressed,
-                      ]}
-                    >
-                      <View
-                        style={[
-                          styles.colorSwatchFill,
-                          { backgroundColor: item.hex },
-                          isLightColor && { borderWidth: 1, borderColor: c.outlineVariant },
-                        ]}
-                      >
-                        {isSelected && (
-                          <Ionicons
-                            name="checkmark"
-                            size={14}
-                            color={isLightColor ? '#1C1B1F' : '#FFFFFF'}
-                          />
-                        )}
-                      </View>
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
-            </View>
-
             {/* Actions */}
             <View style={styles.actionsRow}>
               <Pressable
@@ -433,7 +374,7 @@ const makeStyles = (c: Palette) =>
       fontFamily: fonts.displayBold,
       color: c.onSurface,
       fontSize: 24,
-      letterSpacing: -0.3,
+      letterSpacing: 0.2,
     },
     closeButton: {
       width: 40,
@@ -562,18 +503,6 @@ const makeStyles = (c: Palette) =>
       letterSpacing: 1.1,
       marginBottom: 8,
     },
-    fieldLabelRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: 8,
-    },
-    selectedColorLabel: {
-      fontFamily: fonts.bold,
-      color: c.primary,
-      fontSize: 11,
-      marginBottom: 8,
-    },
     textInput: {
       height: 52,
       borderRadius: shapes.md,
@@ -624,7 +553,7 @@ const makeStyles = (c: Palette) =>
       color: c.onSurfaceVariant,
     },
     formSection: {
-      marginBottom: 18,
+      marginBottom: 22,
     },
     seasonRow: {
       flexDirection: 'row',
@@ -657,31 +586,6 @@ const makeStyles = (c: Palette) =>
     seasonChipTextUnselected: {
       fontFamily: fonts.medium,
       color: c.onSurfaceVariant,
-    },
-    colorSwatchRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
-      paddingVertical: 2,
-    },
-    colorSwatchRing: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderWidth: 2,
-      borderColor: 'transparent',
-    },
-    colorSwatchRingSelected: {
-      borderColor: c.primary,
-    },
-    colorSwatchFill: {
-      width: 26,
-      height: 26,
-      borderRadius: 13,
-      alignItems: 'center',
-      justifyContent: 'center',
     },
     actionsRow: {
       flexDirection: 'row',

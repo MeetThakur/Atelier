@@ -9,6 +9,7 @@ import { todayISO } from '../lib/format';
 
 type Props = {
   item: Item;
+  onPress: () => void;
   onToggleFavorite: (id: string) => void;
   onToggleWornToday?: (id: string) => void;
   onRemove: (item: Item) => void;
@@ -16,6 +17,7 @@ type Props = {
 
 export const ItemCard = memo(function ItemCard({
   item,
+  onPress,
   onToggleFavorite,
   onToggleWornToday,
   onRemove,
@@ -43,6 +45,7 @@ export const ItemCard = memo(function ItemCard({
 
   return (
     <Pressable
+      onPress={onPress}
       onLongPress={handleLongPress}
       delayLongPress={350}
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
@@ -92,30 +95,16 @@ export const ItemCard = memo(function ItemCard({
           <Text style={styles.name} numberOfLines={1}>
             {item.name}
           </Text>
-          {item.colorHex && (
-            <View
-              style={[
-                styles.colorDot,
-                { backgroundColor: item.colorHex },
-                (item.colorHex === '#FDFCFA' || item.colorHex === '#D2B48C') &&
-                  styles.colorDotBorder,
-              ]}
-            />
-          )}
         </View>
 
         <View style={styles.metaRow}>
           <Text style={styles.subCategory}>
-            {item.name !== item.category
-              ? item.category
-              : item.colorName
-                ? item.colorName
-                : item.category}
+            {item.name !== item.category ? item.category : 'Piece'}
           </Text>
           {item.season && item.season !== 'All-Season' && (
             <View style={styles.seasonBadge}>
               <Ionicons
-                name={SEASON_ICONS[item.season]}
+                name={SEASON_ICONS[item.season] || 'sparkles-outline'}
                 size={11}
                 color={c.onSurfaceVariant}
               />
@@ -226,7 +215,6 @@ const makeStyles = (c: Palette) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      gap: 6,
     },
     name: {
       flex: 1,
@@ -234,15 +222,6 @@ const makeStyles = (c: Palette) =>
       color: c.onSurface,
       fontSize: 14.5,
       letterSpacing: 0.1,
-    },
-    colorDot: {
-      width: 9,
-      height: 9,
-      borderRadius: 4.5,
-    },
-    colorDotBorder: {
-      borderWidth: 1,
-      borderColor: c.outlineVariant,
     },
     metaRow: {
       flexDirection: 'row',

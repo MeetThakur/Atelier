@@ -23,12 +23,13 @@ import { CategoryChips } from './src/components/CategoryChips';
 import { FilterModal } from './src/components/FilterModal';
 import { SectionHeader } from './src/components/SectionHeader';
 import { ItemCard } from './src/components/ItemCard';
+import { ItemDetailModal } from './src/components/ItemDetailModal';
 import { EmptyState } from './src/components/EmptyState';
 import { Fab } from './src/components/Fab';
 import { AddItemModal } from './src/components/AddItemModal';
 import { useCloset } from './src/hooks/useCloset';
 import { greeting, todayISO } from './src/lib/format';
-import { COLOR_PALETTE, SEASON_ICONS } from './src/constants';
+import { SEASON_ICONS } from './src/constants';
 import type { Category, Item, Season, SortMode } from './src/types';
 import { useTheme, fonts, shapes, type Palette } from './src/theme';
 import { Ionicons } from '@expo/vector-icons';
@@ -65,11 +66,11 @@ export default function App() {
 
   const [category, setCategory] = useState<Category>('All');
   const [season, setSeason] = useState<Season | 'All'>('All');
-  const [colorId, setColorId] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [filterModalOpen, setFilterModalOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<Item | null>(null);
   const [sortMode, setSortMode] = useState<SortMode>('newest');
 
   const [ready, setReady] = useState(false);
@@ -107,11 +108,6 @@ export default function App() {
     return counts;
   }, [items]);
 
-  const selectedColor = useMemo(
-    () => COLOR_PALETTE.find((col) => col.id === colorId),
-    [colorId]
-  );
-
   const visibleItems = useMemo(() => {
     let list = items.filter((item) => {
       const inCategory = category === 'All' || item.category === category;
@@ -119,9 +115,8 @@ export default function App() {
         season === 'All' ||
         item.season === season ||
         (!item.season && season === 'All-Season');
-      const inColor = !colorId || item.colorHex === selectedColor?.hex;
       const inQuery = item.name.toLowerCase().includes(query.toLowerCase());
-      return inCategory && inSeason && inColor && inQuery;
+      return inCategory && inSeason && inQuery;
     });
 
     if (sortMode === 'favorites') {
@@ -135,7 +130,13 @@ export default function App() {
     }
 
     return list;
-  }, [items, category, season, colorId, selectedColor, query, sortMode, today]);
+  }, [items, category, season, query, sortMode, today]);
+
+  // Keep selectedItem updated if favorited or worn state changes
+  const currentSelectedItem = useMemo(() => {
+    if (!selectedItem) return null;
+    return items.find((i) => i.id === selectedItem.id) || selectedItem;
+  }, [items, selectedItem]);
 
   const cycleSortMode = () => {
     const currentIndex = SORT_ORDER.indexOf(sortMode);
@@ -147,10 +148,9 @@ export default function App() {
     setQuery('');
     setCategory('All');
     setSeason('All');
-    setColorId(null);
   };
 
-  const activeFilterCount = (season !== 'All' ? 1 : 0) + (colorId !== null ? 1 : 0);
+  const activeFilterCount = season !== 'All' ? 1 : 0;
   const hasActiveFilters = Boolean(query) || category !== 'All' || activeFilterCount > 0;
 
   const confirmRemove = (item: Item) => {
@@ -196,7 +196,7 @@ export default function App() {
             counts={loaded ? categoryCounts : undefined}
           />
 
-          {/* Active Sub-Filter Badges (only visible when sub-filters applied) */}
+          {/* Active Sub-Filter Badges */}
           {activeFilterCount > 0 && (
             <View style={styles.activeFiltersRow}>
               {season !== 'All' && (
@@ -205,7 +205,7 @@ export default function App() {
                   style={styles.activeFilterPill}
                 >
                   <Ionicons
-                    name={SEASON_ICONS[season]}
+                    name={SEASON_ICONS[season] || 'sparkles-outline'}
                     size={12}
                     color={c.onPrimaryContainer}
                   />
@@ -214,29 +214,7 @@ export default function App() {
                 </Pressable>
               )}
 
-              {selectedColor && (
-                <Pressable
-                  onPress={() => setColorId(null)}
-                  style={styles.activeFilterPill}
-                >
-                  <View
-                    style={[
-                      styles.activeColorDot,
-                      { backgroundColor: selectedColor.hex },
-                    ]}
-                  />
-                  <Text style={styles.activeFilterText}>{selectedColor.name}</Text>
-                  <Ionicons name="close" size={12} color={c.onPrimaryContainer} />
-                </Pressable>
-              )}
-
-              <Pressable
-                onPress={() => {
-                  setSeason('All');
-                  setColorId(null);
-                }}
-                style={styles.clearFiltersBtn}
-              >
+              <Pressable onPress={() => setSeason('All')} style={styles.clearFiltersBtn}>
                 <Text style={styles.clearFiltersText}>Clear</Text>
               </Pressable>
             </View>
@@ -279,6 +257,7 @@ export default function App() {
             renderItem={({ item }) => (
               <ItemCard
                 item={item}
+                onPress={() => setSelectedItem(item)}
                 onToggleFavorite={toggleFavorite}
                 onToggleWornToday={toggleWornToday}
                 onRemove={confirmRemove}
@@ -300,13 +279,17 @@ export default function App() {
           onClose={() => setFilterModalOpen(false)}
           selectedSeason={season}
           onSeasonChange={setSeason}
-          selectedColorId={colorId}
-          onColorChange={setColorId}
-          onClearAll={() => {
-            setSeason('All');
-            setColorId(null);
-          }}
+          onClearAll={() => setSeason('All')}
           resultCount={visibleItems.length}
+        />
+
+        <ItemDetailModal
+          item={currentSelectedItem}
+          visible={currentSelectedItem !== null}
+          onClose={() => setSelectedItem(null)}
+          onToggleFavorite={toggleFavorite}
+          onToggleWornToday={toggleWornToday}
+          onRemove={removeItem}
         />
       </SafeAreaView>
     </SafeAreaProvider>
@@ -363,11 +346,6 @@ const makeStyles = (c: Palette) =>
       fontFamily: fonts.bold,
       color: c.onPrimaryContainer,
       fontSize: 11,
-    },
-    activeColorDot: {
-      width: 10,
-      height: 10,
-      borderRadius: 5,
     },
     clearFiltersBtn: {
       paddingHorizontal: 8,

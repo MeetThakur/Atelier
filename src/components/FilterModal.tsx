@@ -9,8 +9,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { COLOR_PALETTE, SEASON_ICONS, seasons } from '../constants';
-import type { ColorTag, Season } from '../types';
+import { SEASON_ICONS, seasons } from '../constants';
+import type { Season } from '../types';
 import { useTheme, fonts, shapes, type Palette } from '../theme';
 
 type Props = {
@@ -18,8 +18,6 @@ type Props = {
   onClose: () => void;
   selectedSeason: Season | 'All';
   onSeasonChange: (season: Season | 'All') => void;
-  selectedColorId: string | null;
-  onColorChange: (colorId: string | null) => void;
   onClearAll: () => void;
   resultCount: number;
 };
@@ -29,24 +27,17 @@ export function FilterModal({
   onClose,
   selectedSeason,
   onSeasonChange,
-  selectedColorId,
-  onColorChange,
   onClearAll,
   resultCount,
 }: Props) {
   const c = useTheme();
   const styles = makeStyles(c);
 
-  const hasActiveFilters = selectedSeason !== 'All' || selectedColorId !== null;
+  const hasActiveFilters = selectedSeason !== 'All';
 
   const handleSeasonSelect = (season: Season | 'All') => {
     void Haptics.selectionAsync();
     onSeasonChange(season);
-  };
-
-  const handleColorSelect = (color: ColorTag) => {
-    void Haptics.selectionAsync();
-    onColorChange(selectedColorId === color.id ? null : color.id);
   };
 
   const handleClear = () => {
@@ -74,7 +65,7 @@ export function FilterModal({
 
           {/* Header */}
           <View style={styles.headerRow}>
-            <Text style={styles.title}>Filter Wardrobe</Text>
+            <Text style={styles.title}>Filter Archive</Text>
             <View style={styles.headerActions}>
               {hasActiveFilters && (
                 <Pressable onPress={handleClear} hitSlop={8} style={styles.clearBtn}>
@@ -159,64 +150,6 @@ export function FilterModal({
                 })}
               </View>
             </View>
-
-            {/* Color Filter Section */}
-            <View style={styles.section}>
-              <View style={styles.sectionTitleRow}>
-                <Text style={styles.sectionTitle}>COLOR</Text>
-                {selectedColorId && (
-                  <Text style={styles.selectedColorName}>
-                    {COLOR_PALETTE.find((col) => col.id === selectedColorId)?.name}
-                  </Text>
-                )}
-              </View>
-
-              <View style={styles.colorGrid}>
-                {COLOR_PALETTE.map((item) => {
-                  const isSelected = selectedColorId === item.id;
-                  const isLightColor =
-                    item.hex === '#FDFCFA' || item.hex === '#D2B48C' || item.hex === '#DFA3AC';
-
-                  return (
-                    <Pressable
-                      key={item.id}
-                      onPress={() => handleColorSelect(item)}
-                      accessibilityLabel={item.name}
-                      style={({ pressed }) => [
-                        styles.colorSwatchWrap,
-                        isSelected && styles.colorSwatchWrapSelected,
-                        pressed && styles.pressed,
-                      ]}
-                    >
-                      <View
-                        style={[
-                          styles.colorSwatchCircle,
-                          { backgroundColor: item.hex },
-                          isLightColor && { borderWidth: 1, borderColor: c.outlineVariant },
-                        ]}
-                      >
-                        {isSelected && (
-                          <Ionicons
-                            name="checkmark"
-                            size={16}
-                            color={isLightColor ? '#1C1B1F' : '#FFFFFF'}
-                          />
-                        )}
-                      </View>
-                      <Text
-                        numberOfLines={1}
-                        style={[
-                          styles.colorSwatchName,
-                          isSelected && styles.colorSwatchNameSelected,
-                        ]}
-                      >
-                        {item.name}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </View>
           </ScrollView>
 
           {/* Footer Action */}
@@ -253,7 +186,7 @@ const makeStyles = (c: Palette) =>
       paddingTop: 12,
       paddingHorizontal: 20,
       paddingBottom: Platform.OS === 'ios' ? 36 : 24,
-      maxHeight: '85%',
+      maxHeight: '70%',
     },
     handle: {
       alignSelf: 'center',
@@ -273,7 +206,7 @@ const makeStyles = (c: Palette) =>
       fontFamily: fonts.displayBold,
       color: c.onSurface,
       fontSize: 22,
-      letterSpacing: -0.3,
+      letterSpacing: 0.2,
     },
     headerActions: {
       flexDirection: 'row',
@@ -305,23 +238,12 @@ const makeStyles = (c: Palette) =>
     section: {
       marginBottom: 20,
     },
-    sectionTitleRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: 10,
-    },
     sectionTitle: {
       fontFamily: fonts.extraBold,
       color: c.onSurfaceVariant,
       fontSize: 11,
       letterSpacing: 1.1,
       marginBottom: 10,
-    },
-    selectedColorName: {
-      fontFamily: fonts.bold,
-      color: c.primary,
-      fontSize: 12,
     },
     seasonGrid: {
       flexDirection: 'row',
@@ -358,42 +280,6 @@ const makeStyles = (c: Palette) =>
     seasonTileTextUnselected: {
       fontFamily: fonts.semiBold,
       color: c.onSurfaceVariant,
-    },
-    colorGrid: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: 10,
-      justifyContent: 'space-between',
-    },
-    colorSwatchWrap: {
-      width: '22%',
-      alignItems: 'center',
-      paddingVertical: 8,
-      borderRadius: shapes.md,
-      borderWidth: 1,
-      borderColor: 'transparent',
-    },
-    colorSwatchWrapSelected: {
-      backgroundColor: c.surfaceContainerHigh,
-      borderColor: c.primary,
-    },
-    colorSwatchCircle: {
-      width: 32,
-      height: 32,
-      borderRadius: 16,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginBottom: 4,
-    },
-    colorSwatchName: {
-      fontFamily: fonts.medium,
-      fontSize: 11,
-      color: c.onSurfaceVariant,
-      textAlign: 'center',
-    },
-    colorSwatchNameSelected: {
-      fontFamily: fonts.bold,
-      color: c.onSurface,
     },
     footer: {
       marginTop: 8,
