@@ -10,17 +10,17 @@ import { todayISO } from '../lib/format';
 type Props = {
   item: Item;
   onPress: () => void;
+  onOpenMenu: () => void;
   onToggleFavorite: (id: string) => void;
   onToggleWornToday?: (id: string) => void;
-  onRemove: (item: Item) => void;
 };
 
 export const ItemCard = memo(function ItemCard({
   item,
   onPress,
+  onOpenMenu,
   onToggleFavorite,
   onToggleWornToday,
-  onRemove,
 }: Props) {
   const c = useTheme();
   const styles = makeStyles(c);
@@ -40,7 +40,7 @@ export const ItemCard = memo(function ItemCard({
 
   const handleLongPress = () => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    onRemove(item);
+    onOpenMenu();
   };
 
   return (

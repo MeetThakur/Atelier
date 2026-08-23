@@ -24,6 +24,7 @@ import { FilterModal } from './src/components/FilterModal';
 import { SectionHeader } from './src/components/SectionHeader';
 import { ItemCard } from './src/components/ItemCard';
 import { ItemDetailModal } from './src/components/ItemDetailModal';
+import { ItemActionSheet } from './src/components/ItemActionSheet';
 import { EmptyState } from './src/components/EmptyState';
 import { Fab } from './src/components/Fab';
 import { AddItemModal } from './src/components/AddItemModal';
@@ -71,6 +72,7 @@ export default function App() {
   const [modalOpen, setModalOpen] = useState(false);
   const [filterModalOpen, setFilterModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
+  const [actionSheetItem, setActionSheetItem] = useState<Item | null>(null);
   const [sortMode, setSortMode] = useState<SortMode>('newest');
 
   const [ready, setReady] = useState(false);
@@ -132,11 +134,16 @@ export default function App() {
     return list;
   }, [items, category, season, query, sortMode, today]);
 
-  // Keep selectedItem updated if favorited or worn state changes
+  // Keep modals updated if favorited or worn state changes
   const currentSelectedItem = useMemo(() => {
     if (!selectedItem) return null;
     return items.find((i) => i.id === selectedItem.id) || selectedItem;
   }, [items, selectedItem]);
+
+  const currentActionSheetItem = useMemo(() => {
+    if (!actionSheetItem) return null;
+    return items.find((i) => i.id === actionSheetItem.id) || actionSheetItem;
+  }, [items, actionSheetItem]);
 
   const cycleSortMode = () => {
     const currentIndex = SORT_ORDER.indexOf(sortMode);
@@ -152,13 +159,6 @@ export default function App() {
 
   const activeFilterCount = season !== 'All' ? 1 : 0;
   const hasActiveFilters = Boolean(query) || category !== 'All' || activeFilterCount > 0;
-
-  const confirmRemove = (item: Item) => {
-    Alert.alert('Remove Piece', `"${item.name}" will be deleted from your atelier.`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Remove', style: 'destructive', onPress: () => removeItem(item) },
-    ]);
-  };
 
   if (!ready && !fontsLoaded && !fontError) {
     return null;
@@ -258,9 +258,9 @@ export default function App() {
               <ItemCard
                 item={item}
                 onPress={() => setSelectedItem(item)}
+                onOpenMenu={() => setActionSheetItem(item)}
                 onToggleFavorite={toggleFavorite}
                 onToggleWornToday={toggleWornToday}
-                onRemove={confirmRemove}
               />
             )}
           />
@@ -287,6 +287,16 @@ export default function App() {
           item={currentSelectedItem}
           visible={currentSelectedItem !== null}
           onClose={() => setSelectedItem(null)}
+          onToggleFavorite={toggleFavorite}
+          onToggleWornToday={toggleWornToday}
+          onRemove={removeItem}
+        />
+
+        <ItemActionSheet
+          item={currentActionSheetItem}
+          visible={currentActionSheetItem !== null}
+          onClose={() => setActionSheetItem(null)}
+          onOpenDetails={(item) => setSelectedItem(item)}
           onToggleFavorite={toggleFavorite}
           onToggleWornToday={toggleWornToday}
           onRemove={removeItem}
