@@ -101,7 +101,7 @@ function DraggablePiece({
     currentScaleRef.current = data.scale;
   }, [data.scale, scaleAnim]);
 
-  // Two-finger pinch state tracking
+  // Two-finger pinch state tracking on the piece
   const initialPinchDistRef = useRef<number | null>(null);
   const pinchStartScaleRef = useRef<number>(data.scale);
   const isPinchingRef = useRef<boolean>(false);
@@ -113,12 +113,12 @@ function DraggablePiece({
       onMoveShouldSetPanResponder: (evt, gestureState) => {
         const touches = evt.nativeEvent.touches;
         if (touches && touches.length >= 2) return true;
-        return Math.abs(gestureState.dx) > 3 || Math.abs(gestureState.dy) > 3;
+        return Math.abs(gestureState.dx) > 2 || Math.abs(gestureState.dy) > 2;
       },
       onMoveShouldSetPanResponderCapture: (evt, gestureState) => {
         const touches = evt.nativeEvent.touches;
         if (touches && touches.length >= 2) return true;
-        return Math.abs(gestureState.dx) > 3 || Math.abs(gestureState.dy) > 3;
+        return Math.abs(gestureState.dx) > 2 || Math.abs(gestureState.dy) > 2;
       },
       onPanResponderGrant: (evt) => {
         callbacksRef.current.onSelect();
@@ -146,7 +146,7 @@ function DraggablePiece({
         const touches = evt.nativeEvent.touches;
 
         if (touches && touches.length >= 2) {
-          // Two-finger Pinch to zoom / resize
+          // 2-finger expand and shrink pinch!
           const currentDist = Math.hypot(
             touches[0].pageX - touches[1].pageX,
             touches[0].pageY - touches[1].pageY
@@ -158,12 +158,13 @@ function DraggablePiece({
             pinchStartScaleRef.current = currentScaleRef.current;
           } else {
             const factor = currentDist / initialPinchDistRef.current;
-            const newScale = Math.min(Math.max(pinchStartScaleRef.current * factor, 0.45), 2.8);
+            const newScale = Math.min(Math.max(pinchStartScaleRef.current * factor, 0.4), 3.0);
             scaleAnim.setValue(newScale);
             currentScaleRef.current = newScale;
+            callbacksRef.current.onUpdateScale(newScale);
           }
         } else if (!isPinchingRef.current) {
-          // Single-finger Pan
+          // 1-finger drag
           pan.setValue({ x: gestureState.dx, y: gestureState.dy });
         }
       },
@@ -181,39 +182,15 @@ function DraggablePiece({
           callbacksRef.current.onMoveEnd(lastOffset.current.x, lastOffset.current.y);
         }
       },
-    })
-  );
-
-  // Corner Drag-to-Resize Responder
-  const startDragScaleRef = useRef(1);
-  const cornerResizeResponder = useConst(() =>
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: () => {
-        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        startDragScaleRef.current = currentScaleRef.current;
-      },
-      onPanResponderMove: (_, gestureState) => {
-        const delta = (gestureState.dx + gestureState.dy) / 140;
-        const newScale = Math.min(Math.max(startDragScaleRef.current + delta, 0.45), 2.8);
-        scaleAnim.setValue(newScale);
-        currentScaleRef.current = newScale;
-        callbacksRef.current.onUpdateScale(newScale);
-      },
-      onPanResponderRelease: () => {
-        callbacksRef.current.onUpdateScale(currentScaleRef.current);
+      onPanResponderTerminate: () => {
+        if (isPinchingRef.current) {
+          callbacksRef.current.onUpdateScale(currentScaleRef.current);
+          isPinchingRef.current = false;
+          initialPinchDistRef.current = null;
+        }
       },
     })
   );
-
-  const handleStepScale = (delta: number) => {
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const newScale = Math.min(Math.max(currentScaleRef.current + delta, 0.45), 2.8);
-    scaleAnim.setValue(newScale);
-    currentScaleRef.current = newScale;
-    onUpdateScale(newScale);
-  };
 
   const baseWidth = 145;
   const baseHeight = 180;
@@ -254,66 +231,33 @@ function DraggablePiece({
           resizeMode="contain"
         />
 
-        {/* Selected Controls Header & Corner Handle */}
+        {/* Selected Controls Bar */}
         {isSelected && (
-          <>
-            {/* Top Action & Scale Buttons */}
-            <View style={styles.floatingControlsWrap} pointerEvents="box-none">
-              <Pressable
-                onPress={(e) => {
-                  e.stopPropagation();
-                  handleStepScale(-0.15);
-                }}
-                hitSlop={10}
-                style={[styles.miniControlBtn, { backgroundColor: palette.primary }]}
-              >
-                <Ionicons name="remove" size={13} color={palette.onPrimary} />
-              </Pressable>
-
-              <Pressable
-                onPress={(e) => {
-                  e.stopPropagation();
-                  handleStepScale(0.15);
-                }}
-                hitSlop={10}
-                style={[styles.miniControlBtn, { backgroundColor: palette.primary }]}
-              >
-                <Ionicons name="add" size={13} color={palette.onPrimary} />
-              </Pressable>
-
-              <Pressable
-                onPress={(e) => {
-                  e.stopPropagation();
-                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  onBringToFront();
-                }}
-                hitSlop={10}
-                style={[styles.miniControlBtn, { backgroundColor: palette.primary }]}
-              >
-                <Ionicons name="arrow-up" size={12} color={palette.onPrimary} />
-              </Pressable>
-
-              <Pressable
-                onPress={(e) => {
-                  e.stopPropagation();
-                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                  onRemove();
-                }}
-                hitSlop={10}
-                style={[styles.miniControlBtn, { backgroundColor: palette.error }]}
-              >
-                <Ionicons name="close" size={12} color="#FFFFFF" />
-              </Pressable>
-            </View>
-
-            {/* Corner Resize Handle */}
-            <View
-              style={[styles.cornerHandle, { backgroundColor: palette.gold }]}
-              {...cornerResizeResponder.panHandlers}
+          <View style={styles.floatingControlsWrap} pointerEvents="box-none">
+            <Pressable
+              onPress={(e) => {
+                e.stopPropagation();
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onBringToFront();
+              }}
+              hitSlop={14}
+              style={[styles.miniControlBtn, { backgroundColor: palette.primary }]}
             >
-              <Ionicons name="resize" size={11} color="#FFFFFF" />
-            </View>
-          </>
+              <Ionicons name="arrow-up" size={12} color={palette.onPrimary} />
+            </Pressable>
+
+            <Pressable
+              onPress={(e) => {
+                e.stopPropagation();
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                onRemove();
+              }}
+              hitSlop={14}
+              style={[styles.miniControlBtn, { backgroundColor: palette.error }]}
+            >
+              <Ionicons name="close" size={12} color="#FFFFFF" />
+            </Pressable>
+          </View>
         )}
       </Pressable>
     </Animated.View>
@@ -340,6 +284,15 @@ export function OutfitCanvas({ items }: Props) {
 
   const nextZIndex = useRef(10);
   const undoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Global 2-finger pinch tracker for the entire canvas board
+  const canvasPinchDistRef = useRef<number | null>(null);
+  const canvasPinchStartScaleRef = useRef<number>(1);
+  const selectedInstanceIdRef = useRef<string | null>(selectedInstanceId);
+  selectedInstanceIdRef.current = selectedInstanceId;
+
+  const canvasPiecesRef = useRef<CanvasPieceData[]>(canvasPieces);
+  canvasPiecesRef.current = canvasPieces;
 
   useEffect(() => {
     AsyncStorage.getItem(OUTFITS_STORAGE_KEY)
@@ -417,6 +370,58 @@ export function OutfitCanvas({ items }: Props) {
       prev.map((p) => (p.instanceId === instanceId ? { ...p, x, y } : p))
     );
   };
+
+  // Canvas Board Multi-Touch Responder for 2-finger expand/shrink
+  const canvasBoardResponder = useConst(() =>
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onStartShouldSetPanResponderCapture: () => false,
+      onMoveShouldSetPanResponder: (evt) => {
+        return evt.nativeEvent.touches && evt.nativeEvent.touches.length >= 2;
+      },
+      onMoveShouldSetPanResponderCapture: (evt) => {
+        return evt.nativeEvent.touches && evt.nativeEvent.touches.length >= 2;
+      },
+      onPanResponderGrant: (evt) => {
+        const touches = evt.nativeEvent.touches;
+        if (touches && touches.length >= 2) {
+          const dist = Math.hypot(
+            touches[0].pageX - touches[1].pageX,
+            touches[0].pageY - touches[1].pageY
+          );
+          canvasPinchDistRef.current = Math.max(dist, 1);
+
+          const targetId = selectedInstanceIdRef.current || (canvasPiecesRef.current.length > 0 ? canvasPiecesRef.current[canvasPiecesRef.current.length - 1].instanceId : null);
+          if (targetId) {
+            const piece = canvasPiecesRef.current.find((p) => p.instanceId === targetId);
+            canvasPinchStartScaleRef.current = piece ? piece.scale : 1;
+          }
+        }
+      },
+      onPanResponderMove: (evt) => {
+        const touches = evt.nativeEvent.touches;
+        if (touches && touches.length >= 2 && canvasPinchDistRef.current) {
+          const currentDist = Math.hypot(
+            touches[0].pageX - touches[1].pageX,
+            touches[0].pageY - touches[1].pageY
+          );
+          const factor = currentDist / canvasPinchDistRef.current;
+          const newScale = Math.min(Math.max(canvasPinchStartScaleRef.current * factor, 0.4), 3.0);
+
+          const targetId = selectedInstanceIdRef.current || (canvasPiecesRef.current.length > 0 ? canvasPiecesRef.current[canvasPiecesRef.current.length - 1].instanceId : null);
+          if (targetId) {
+            handleUpdateScale(targetId, newScale);
+          }
+        }
+      },
+      onPanResponderRelease: () => {
+        canvasPinchDistRef.current = null;
+      },
+      onPanResponderTerminate: () => {
+        canvasPinchDistRef.current = null;
+      },
+    })
+  );
 
   const handleClear = () => {
     if (canvasPieces.length === 0) return;
@@ -575,7 +580,7 @@ export function OutfitCanvas({ items }: Props) {
         <View style={styles.toolbarLeft}>
           <Text style={styles.canvasTitle}>Studio Canvas</Text>
           <Text style={styles.canvasSubtitle} numberOfLines={1}>
-            Pinch, pull corner, or tap -/+ to resize
+            Pinch with 2 fingers to expand & shrink
           </Text>
         </View>
 
@@ -632,32 +637,40 @@ export function OutfitCanvas({ items }: Props) {
       </View>
 
       {/* Main Interactive Canvas Board */}
-      <Pressable style={styles.canvasBoard} onPress={() => setSelectedInstanceId(null)}>
-        {canvasPieces.length === 0 ? (
-          <View style={styles.emptyCanvasHint}>
-            <View style={styles.hintIconCircle}>
-              <Ionicons name="finger-print-outline" size={28} color={c.gold} />
+      <View
+        style={styles.canvasBoard}
+        {...canvasBoardResponder.panHandlers}
+      >
+        <Pressable
+          style={StyleSheet.absoluteFill}
+          onPress={() => setSelectedInstanceId(null)}
+        >
+          {canvasPieces.length === 0 ? (
+            <View style={styles.emptyCanvasHint}>
+              <View style={styles.hintIconCircle}>
+                <Ionicons name="finger-print-outline" size={28} color={c.gold} />
+              </View>
+              <Text style={styles.hintTitle}>Interactive Lookbook Studio</Text>
+              <Text style={styles.hintText}>
+                Tap pieces below to add cutouts. Drag anywhere, and pinch with 2 fingers to expand & shrink.
+              </Text>
             </View>
-            <Text style={styles.hintTitle}>Interactive Lookbook Studio</Text>
-            <Text style={styles.hintText}>
-              Tap pieces below to add cutouts. Drag anywhere, pinch with two fingers, pull the corner handle, or tap -/+ to resize.
-            </Text>
-          </View>
-        ) : (
-          canvasPieces.map((piece) => (
-            <DraggablePiece
-              key={piece.instanceId}
-              data={piece}
-              isSelected={selectedInstanceId === piece.instanceId}
-              onSelect={() => setSelectedInstanceId(piece.instanceId)}
-              onRemove={() => handleRemovePiece(piece.instanceId)}
-              onBringToFront={() => handleBringToFront(piece.instanceId)}
-              onUpdateScale={(newScale) => handleUpdateScale(piece.instanceId, newScale)}
-              onMoveEnd={(x, y) => handleUpdatePosition(piece.instanceId, x, y)}
-              palette={c}
-            />
-          ))
-        )}
+          ) : (
+            canvasPieces.map((piece) => (
+              <DraggablePiece
+                key={piece.instanceId}
+                data={piece}
+                isSelected={selectedInstanceId === piece.instanceId}
+                onSelect={() => setSelectedInstanceId(piece.instanceId)}
+                onRemove={() => handleRemovePiece(piece.instanceId)}
+                onBringToFront={() => handleBringToFront(piece.instanceId)}
+                onUpdateScale={(newScale) => handleUpdateScale(piece.instanceId, newScale)}
+                onMoveEnd={(x, y) => handleUpdatePosition(piece.instanceId, x, y)}
+                palette={c}
+              />
+            ))
+          )}
+        </Pressable>
 
         {/* Undo Floating Banner */}
         {lastRemovedPiece && (
@@ -668,7 +681,7 @@ export function OutfitCanvas({ items }: Props) {
             </Pressable>
           </View>
         )}
-      </Pressable>
+      </View>
 
       {/* Wardrobe Tray / Drawer */}
       <View style={[styles.drawerContainer, !drawerExpanded && styles.drawerCollapsed]}>
@@ -884,20 +897,6 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 },
     elevation: 5,
-  },
-  cornerHandle: {
-    position: 'absolute',
-    bottom: -10,
-    right: -10,
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 7,
   },
 });
 
