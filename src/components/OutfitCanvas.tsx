@@ -67,14 +67,22 @@ function DraggablePiece({
   const initialPinchDistRef = useRef<number | null>(null);
   const pinchStartScaleRef = useRef<number>(data.scale);
   const isPinchingRef = useRef<boolean>(false);
-  const touchStartTimeRef = useRef<number>(0);
 
   const mainPanResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
+      onStartShouldSetPanResponder: () => false,
+      onStartShouldSetPanResponderCapture: () => false,
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        const touches = evt.nativeEvent.touches;
+        if (touches && touches.length >= 2) return true;
+        return Math.abs(gestureState.dx) > 3 || Math.abs(gestureState.dy) > 3;
+      },
+      onMoveShouldSetPanResponderCapture: (evt, gestureState) => {
+        const touches = evt.nativeEvent.touches;
+        if (touches && touches.length >= 2) return true;
+        return Math.abs(gestureState.dx) > 3 || Math.abs(gestureState.dy) > 3;
+      },
       onPanResponderGrant: (evt) => {
-        touchStartTimeRef.current = Date.now();
         onSelect();
 
         const touches = evt.nativeEvent.touches;
@@ -100,7 +108,7 @@ function DraggablePiece({
         const touches = evt.nativeEvent.touches;
 
         if (touches && touches.length >= 2) {
-          // Two-finger Pinch to Enlarge / Scale
+          // Two-finger Pinch
           const currentDist = Math.hypot(
             touches[0].pageX - touches[1].pageX,
             touches[0].pageY - touches[1].pageY
@@ -116,19 +124,11 @@ function DraggablePiece({
             currentScaleRef.current = newScale;
           }
         } else if (!isPinchingRef.current) {
-          // Single-finger Translation
+          // Single-finger Pan
           pan.setValue({ x: gestureState.dx, y: gestureState.dy });
         }
       },
       onPanResponderRelease: (_, gestureState) => {
-        const duration = Date.now() - touchStartTimeRef.current;
-        const isTap = Math.abs(gestureState.dx) < 4 && Math.abs(gestureState.dy) < 4 && duration < 280;
-
-        if (isTap) {
-          void Haptics.selectionAsync();
-          onSelect();
-        }
-
         if (isPinchingRef.current) {
           onUpdateScale(currentScaleRef.current);
           isPinchingRef.current = false;
@@ -155,7 +155,7 @@ function DraggablePiece({
         startDragScaleRef.current = currentScaleRef.current;
       },
       onPanResponderMove: (_, gestureState) => {
-        const delta = (gestureState.dx + gestureState.dy) / 160;
+        const delta = (gestureState.dx + gestureState.dy) / 150;
         const newScale = Math.min(Math.max(startDragScaleRef.current + delta, 0.45), 2.8);
         scaleAnim.setValue(newScale);
         currentScaleRef.current = newScale;
@@ -184,7 +184,11 @@ function DraggablePiece({
       ]}
       {...mainPanResponder.panHandlers}
     >
-      <View
+      <Pressable
+        onPress={() => {
+          void Haptics.selectionAsync();
+          onSelect();
+        }}
         style={[
           styles.pieceFrame,
           {
@@ -206,25 +210,27 @@ function DraggablePiece({
             {/* Top Action Buttons */}
             <View style={styles.floatingControlsWrap} pointerEvents="box-none">
               <Pressable
-                onPress={() => {
+                onPress={(e) => {
+                  e.stopPropagation();
                   void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   onBringToFront();
                 }}
-                hitSlop={10}
+                hitSlop={12}
                 style={[styles.miniControlBtn, { backgroundColor: palette.primary }]}
               >
-                <Ionicons name="arrow-up" size={11} color={palette.onPrimary} />
+                <Ionicons name="arrow-up" size={12} color={palette.onPrimary} />
               </Pressable>
 
               <Pressable
-                onPress={() => {
+                onPress={(e) => {
+                  e.stopPropagation();
                   void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                   onRemove();
                 }}
-                hitSlop={10}
+                hitSlop={12}
                 style={[styles.miniControlBtn, { backgroundColor: palette.error }]}
               >
-                <Ionicons name="close" size={11} color="#FFFFFF" />
+                <Ionicons name="close" size={12} color="#FFFFFF" />
               </Pressable>
             </View>
 
@@ -233,11 +239,11 @@ function DraggablePiece({
               style={[styles.cornerHandle, { backgroundColor: palette.gold }]}
               {...cornerResizeResponder.panHandlers}
             >
-              <Ionicons name="resize" size={10} color="#FFFFFF" />
+              <Ionicons name="resize" size={11} color="#FFFFFF" />
             </View>
           </>
         )}
-      </View>
+      </Pressable>
     </Animated.View>
   );
 }
@@ -464,7 +470,7 @@ export function OutfitCanvas({ items }: Props) {
         <View style={styles.toolbarRight}>
           <Pressable
             onPress={handleShuffle}
-            hitSlop={6}
+            hitSlop={8}
             style={({ pressed }) => [styles.toolBtn, pressed && styles.pressed]}
           >
             <Ionicons name="shuffle-outline" size={17} color={c.onSurface} />
@@ -472,7 +478,7 @@ export function OutfitCanvas({ items }: Props) {
 
           <Pressable
             onPress={() => setShowSavedModal(true)}
-            hitSlop={6}
+            hitSlop={8}
             style={({ pressed }) => [styles.toolBtn, pressed && styles.pressed]}
           >
             <Ionicons name="bookmark-outline" size={17} color={c.onSurface} />
@@ -489,7 +495,7 @@ export function OutfitCanvas({ items }: Props) {
                 setShowSavePrompt(true);
               }
             }}
-            hitSlop={6}
+            hitSlop={8}
             style={({ pressed }) => [
               styles.toolBtn,
               canvasPieces.length === 0 && styles.toolBtnDisabled,
@@ -501,7 +507,7 @@ export function OutfitCanvas({ items }: Props) {
 
           <Pressable
             onPress={handleClear}
-            hitSlop={6}
+            hitSlop={8}
             style={({ pressed }) => [
               styles.toolBtn,
               canvasPieces.length === 0 && styles.toolBtnDisabled,
@@ -731,9 +737,9 @@ const styles = StyleSheet.create({
     zIndex: 999,
   },
   miniControlBtn: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -746,9 +752,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: -8,
     right: -8,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
