@@ -89,6 +89,16 @@ export const light = {
   catShoesBg: '#FBF1E8',
   catAccessories: '#B8860B',
   catAccessoriesBg: '#FBF5E6',
+
+  // Season Palette Tokens
+  seasonSpring: '#2D6A4F',
+  seasonSpringBg: '#EAF4EF',
+  seasonSummer: '#D4AF37',
+  seasonSummerBg: '#FDF7E7',
+  seasonFall: '#BA4A38',
+  seasonFallBg: '#FCEFEB',
+  seasonWinter: '#3A6B88',
+  seasonWinterBg: '#EDF5FA',
 } as const;
 
 // Haute Editorial Dark Palette (Obsidian Velvet + Elevated Studio Card + Warm Ivory + Pale Gold)
@@ -150,6 +160,16 @@ export const dark = {
   catShoesBg: '#2D1D13',
   catAccessories: '#E6C594',
   catAccessoriesBg: '#302615',
+
+  // Season Palette Tokens (Dark)
+  seasonSpring: '#52B788',
+  seasonSpringBg: '#132A20',
+  seasonSummer: '#E6C594',
+  seasonSummerBg: '#342918',
+  seasonFall: '#E07A5F',
+  seasonFallBg: '#2E1712',
+  seasonWinter: '#74B3CE',
+  seasonWinterBg: '#14252E',
 } as const;
 
 export type Palette = { [K in keyof typeof light]: string };

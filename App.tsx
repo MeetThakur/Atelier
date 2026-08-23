@@ -214,6 +214,29 @@ function AtelierApp() {
               columnWrapperStyle={styles.gridRow}
               contentContainerStyle={styles.grid}
               showsVerticalScrollIndicator={false}
+              ListHeaderComponent={
+                !hasActiveFilters && items.length > 0 ? (
+                  <View style={styles.spotlightHero}>
+                    <View style={styles.spotlightLeft}>
+                      <View style={styles.spotlightTag}>
+                        <Ionicons name="sparkles" size={11} color={c.gold} />
+                        <Text style={styles.spotlightTagText}>STUDIO SPOTLIGHT</Text>
+                      </View>
+                      <Text style={styles.spotlightTitle}>Style Today's Look</Text>
+                      <Text style={styles.spotlightSubtitle}>
+                        Mix and match {items.length} pieces on the styling canvas.
+                      </Text>
+                    </View>
+                    <Pressable
+                      onPress={() => handleTabChange('canvas')}
+                      style={({ pressed }) => [styles.spotlightActionBtn, pressed && styles.pressed]}
+                    >
+                      <Ionicons name="color-wand" size={14} color={c.onPrimary} />
+                      <Text style={styles.spotlightActionText}>Studio</Text>
+                    </Pressable>
+                  </View>
+                ) : null
+              }
               ListEmptyComponent={
                 hasActiveFilters ? (
                   <EmptyState
@@ -399,5 +422,64 @@ const makeStyles = (c: Palette) =>
       fontFamily: fonts.bold,
       color: c.primary,
       fontSize: 11.5,
+    },
+    spotlightHero: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: c.surfaceContainerLow,
+      borderRadius: shapes.xl,
+      padding: 14,
+      marginTop: 4,
+      marginBottom: 14,
+      borderWidth: 1,
+      borderColor: c.outlineVariant,
+    },
+    spotlightLeft: {
+      flex: 1,
+      paddingRight: 10,
+    },
+    spotlightTag: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      marginBottom: 3,
+    },
+    spotlightTagText: {
+      fontFamily: fonts.bold,
+      color: c.gold,
+      fontSize: 9.5,
+      letterSpacing: 0.8,
+    },
+    spotlightTitle: {
+      fontFamily: fonts.bold,
+      color: c.onSurface,
+      fontSize: 15,
+      letterSpacing: -0.2,
+      marginBottom: 2,
+    },
+    spotlightSubtitle: {
+      fontFamily: fonts.medium,
+      color: c.onSurfaceVariant,
+      fontSize: 11.5,
+      lineHeight: 16,
+    },
+    spotlightActionBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+      backgroundColor: c.primary,
+      paddingHorizontal: 12,
+      paddingVertical: 7,
+      borderRadius: shapes.full,
+    },
+    spotlightActionText: {
+      fontFamily: fonts.bold,
+      color: c.onPrimary,
+      fontSize: 12,
+    },
+    pressed: {
+      opacity: 0.75,
+      transform: [{ scale: 0.96 }],
     },
   });

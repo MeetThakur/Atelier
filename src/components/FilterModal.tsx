@@ -50,6 +50,14 @@ export function FilterModal({
     onClose();
   };
 
+  const SEASON_COLORS: Record<string, { color: string; bg: string }> = {
+    Spring: { color: c.seasonSpring, bg: c.seasonSpringBg },
+    Summer: { color: c.seasonSummer, bg: c.seasonSummerBg },
+    Fall: { color: c.seasonFall, bg: c.seasonFallBg },
+    Winter: { color: c.seasonWinter, bg: c.seasonWinterBg },
+    All: { color: c.gold, bg: c.goldContainer },
+  };
+
   return (
     <Modal
       visible={visible}
@@ -65,7 +73,10 @@ export function FilterModal({
 
           {/* Header */}
           <View style={styles.headerRow}>
-            <Text style={styles.title}>Filter Archive</Text>
+            <View>
+              <Text style={styles.title}>Season Filter</Text>
+              <Text style={styles.subtitle}>Refine wardrobe collection</Text>
+            </View>
             <View style={styles.headerActions}>
               {hasActiveFilters && (
                 <Pressable onPress={handleClear} hitSlop={8} style={styles.clearBtn}>
@@ -74,81 +85,101 @@ export function FilterModal({
               )}
               <Pressable
                 onPress={onClose}
-                hitSlop={10}
+                hitSlop={8}
                 style={({ pressed }) => [styles.closeBtn, pressed && styles.pressed]}
               >
-                <Ionicons name="close" size={20} color={c.onSurfaceVariant} />
+                <Ionicons name="close" size={19} color={c.onSurface} />
               </Pressable>
             </View>
           </View>
 
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.body}>
-            {/* Season Filter Section */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>SEASON</Text>
-              <View style={styles.seasonGrid}>
-                <Pressable
-                  onPress={() => handleSeasonSelect('All')}
-                  style={({ pressed }) => [
-                    styles.seasonTile,
-                    selectedSeason === 'All'
-                      ? styles.seasonTileSelected
-                      : styles.seasonTileUnselected,
-                    pressed && styles.pressed,
+            <View style={styles.seasonGrid}>
+              <Pressable
+                onPress={() => handleSeasonSelect('All')}
+                style={({ pressed }) => [
+                  styles.seasonTile,
+                  selectedSeason === 'All' && styles.seasonTileSelected,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <View
+                  style={[
+                    styles.seasonIconWrap,
+                    {
+                      backgroundColor:
+                        selectedSeason === 'All' ? SEASON_COLORS.All.bg : c.surfaceContainerHigh,
+                    },
                   ]}
                 >
                   <Ionicons
                     name="grid-outline"
-                    size={16}
-                    color={
-                      selectedSeason === 'All' ? c.onPrimaryContainer : c.onSurfaceVariant
-                    }
+                    size={17}
+                    color={selectedSeason === 'All' ? c.gold : c.onSurfaceVariant}
                   />
+                </View>
+                <View style={styles.seasonTileInfo}>
                   <Text
                     style={[
                       styles.seasonTileText,
-                      selectedSeason === 'All'
-                        ? styles.seasonTileTextSelected
-                        : styles.seasonTileTextUnselected,
+                      selectedSeason === 'All' && styles.seasonTileTextSelected,
                     ]}
                   >
                     All Seasons
                   </Text>
-                </Pressable>
+                  <Text style={styles.seasonTileSub}>Complete wardrobe</Text>
+                </View>
+                {selectedSeason === 'All' && (
+                  <Ionicons name="checkmark-circle" size={18} color={c.gold} />
+                )}
+              </Pressable>
 
-                {seasons.map((s) => {
-                  const isSelected = selectedSeason === s;
-                  const iconName = SEASON_ICONS[s];
+              {seasons.map((s) => {
+                const isSelected = selectedSeason === s;
+                const iconName = SEASON_ICONS[s];
+                const sc = SEASON_COLORS[s];
 
-                  return (
-                    <Pressable
-                      key={s}
-                      onPress={() => handleSeasonSelect(s)}
-                      style={({ pressed }) => [
-                        styles.seasonTile,
-                        isSelected ? styles.seasonTileSelected : styles.seasonTileUnselected,
-                        pressed && styles.pressed,
+                return (
+                  <Pressable
+                    key={s}
+                    onPress={() => handleSeasonSelect(s)}
+                    style={({ pressed }) => [
+                      styles.seasonTile,
+                      isSelected && styles.seasonTileSelected,
+                      pressed && styles.pressed,
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.seasonIconWrap,
+                        {
+                          backgroundColor: isSelected ? sc.bg : c.surfaceContainerHigh,
+                        },
                       ]}
                     >
                       <Ionicons
                         name={iconName}
-                        size={16}
-                        color={isSelected ? c.onPrimaryContainer : c.onSurfaceVariant}
+                        size={17}
+                        color={isSelected ? sc.color : c.onSurfaceVariant}
                       />
+                    </View>
+                    <View style={styles.seasonTileInfo}>
                       <Text
                         style={[
                           styles.seasonTileText,
-                          isSelected
-                            ? styles.seasonTileTextSelected
-                            : styles.seasonTileTextUnselected,
+                          isSelected && styles.seasonTileTextSelected,
                         ]}
                       >
                         {s}
                       </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
+                      <Text style={styles.seasonTileSub}>{s} edits</Text>
+                    </View>
+                    {isSelected && (
+                      <Ionicons name="checkmark-circle" size={18} color={sc.color} />
+                    )}
+                  </Pressable>
+                );
+              })}
             </View>
           </ScrollView>
 
@@ -159,7 +190,7 @@ export function FilterModal({
               style={({ pressed }) => [styles.applyBtn, pressed && styles.pressed]}
             >
               <Text style={styles.applyBtnText}>
-                {resultCount === 1 ? 'Show 1 piece' : `Show ${resultCount} pieces`}
+                {resultCount === 1 ? 'Show 1 Piece' : `Show ${resultCount} Pieces`}
               </Text>
             </Pressable>
           </View>
@@ -186,7 +217,9 @@ const makeStyles = (c: Palette) =>
       paddingTop: 12,
       paddingHorizontal: 20,
       paddingBottom: Platform.OS === 'ios' ? 36 : 24,
-      maxHeight: '70%',
+      maxHeight: '75%',
+      borderWidth: 1,
+      borderColor: c.outlineVariant,
     },
     handle: {
       alignSelf: 'center',
@@ -199,34 +232,40 @@ const makeStyles = (c: Palette) =>
     headerRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      alignItems: 'center',
+      alignItems: 'flex-start',
       marginBottom: 16,
     },
     title: {
       fontFamily: fonts.displayBold,
       color: c.onSurface,
       fontSize: 22,
-      letterSpacing: 0.2,
+      letterSpacing: -0.3,
+    },
+    subtitle: {
+      fontFamily: fonts.medium,
+      color: c.onSurfaceVariant,
+      fontSize: 12,
+      marginTop: 2,
     },
     headerActions: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 12,
+      gap: 10,
     },
     clearBtn: {
       paddingHorizontal: 12,
-      paddingVertical: 6,
+      paddingVertical: 5,
       borderRadius: shapes.full,
-      backgroundColor: c.surfaceContainerHighest,
+      backgroundColor: c.surfaceContainerHigh,
     },
     clearBtnText: {
       fontFamily: fonts.bold,
-      color: c.primary,
+      color: c.gold,
       fontSize: 12,
     },
     closeBtn: {
-      width: 36,
-      height: 36,
+      width: 34,
+      height: 34,
       borderRadius: shapes.full,
       backgroundColor: c.surfaceContainerHigh,
       alignItems: 'center',
@@ -235,51 +274,46 @@ const makeStyles = (c: Palette) =>
     body: {
       paddingBottom: 16,
     },
-    section: {
-      marginBottom: 20,
-    },
-    sectionTitle: {
-      fontFamily: fonts.extraBold,
-      color: c.onSurfaceVariant,
-      fontSize: 11,
-      letterSpacing: 1.1,
-      marginBottom: 10,
-    },
     seasonGrid: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
       gap: 8,
     },
     seasonTile: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 6,
-      paddingHorizontal: 14,
-      paddingVertical: 10,
-      borderRadius: shapes.md,
+      gap: 12,
+      padding: 12,
+      borderRadius: shapes.xl,
       borderWidth: 1,
-      minWidth: '47%',
-      flex: 1,
-      justifyContent: 'center',
+      borderColor: c.outlineVariant,
+      backgroundColor: c.cardBg,
     },
     seasonTileSelected: {
-      backgroundColor: c.primaryContainer,
-      borderColor: 'transparent',
-    },
-    seasonTileUnselected: {
+      borderColor: c.gold,
       backgroundColor: c.surfaceContainerHigh,
-      borderColor: c.outlineVariant,
+    },
+    seasonIconWrap: {
+      width: 38,
+      height: 38,
+      borderRadius: 19,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    seasonTileInfo: {
+      flex: 1,
     },
     seasonTileText: {
-      fontSize: 13,
+      fontFamily: fonts.bold,
+      color: c.onSurface,
+      fontSize: 14.5,
     },
     seasonTileTextSelected: {
-      fontFamily: fonts.bold,
-      color: c.onPrimaryContainer,
+      color: c.onSurface,
     },
-    seasonTileTextUnselected: {
-      fontFamily: fonts.semiBold,
+    seasonTileSub: {
+      fontFamily: fonts.medium,
       color: c.onSurfaceVariant,
+      fontSize: 11.5,
+      marginTop: 1,
     },
     footer: {
       marginTop: 8,
@@ -290,11 +324,16 @@ const makeStyles = (c: Palette) =>
       backgroundColor: c.primary,
       alignItems: 'center',
       justifyContent: 'center',
+      shadowColor: '#000',
+      shadowOpacity: 0.12,
+      shadowRadius: 6,
+      elevation: 2,
     },
     applyBtnText: {
       fontFamily: fonts.bold,
       color: c.onPrimary,
       fontSize: 15,
+      letterSpacing: 0.2,
     },
     pressed: {
       opacity: 0.75,

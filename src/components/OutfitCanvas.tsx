@@ -687,22 +687,47 @@ export function OutfitCanvas({ items }: Props) {
       <View style={styles.topHeader}>
         <View style={styles.headerLeft}>
           <Text style={styles.canvasTitle}>Studio</Text>
-          <View style={styles.pieceCountPill}>
-            <Text style={styles.pieceCountPillText}>
-              {canvasPieces.length === 1 ? '1 piece' : `${canvasPieces.length} pieces`}
+          {canvasPieces.length > 0 && (
+            <Text style={styles.canvasSubtitle}>
+              {canvasPieces.length} {canvasPieces.length === 1 ? 'piece' : 'pieces'} styled
             </Text>
-          </View>
+          )}
         </View>
 
         <View style={styles.headerRight}>
-          {/* Saved Looks Action */}
+          {/* Shuffle Tool */}
+          <Pressable
+            onPress={handleShuffle}
+            hitSlop={6}
+            style={({ pressed }) => [styles.headerIconBtn, pressed && styles.pressed]}
+          >
+            <Ionicons name="shuffle-outline" size={17} color={c.onSurface} />
+          </Pressable>
+
+          {/* Backdrop Atmosphere Selector */}
+          <Pressable
+            onPress={() => setShowBackdropModal(true)}
+            hitSlop={6}
+            style={({ pressed }) => [styles.headerIconBtn, pressed && styles.pressed]}
+          >
+            <View
+              style={[
+                styles.headerBackdropDot,
+                {
+                  backgroundColor: activeBackdrop.swatch,
+                  borderColor: backdrop === 'silk' ? c.outlineVariant : 'transparent',
+                },
+              ]}
+            />
+          </Pressable>
+
+          {/* Saved Looks Collection */}
           <Pressable
             onPress={() => setShowSavedModal(true)}
-            hitSlop={8}
-            style={({ pressed }) => [styles.headerBtn, pressed && styles.pressed]}
+            hitSlop={6}
+            style={({ pressed }) => [styles.headerIconBtn, pressed && styles.pressed]}
           >
-            <Ionicons name="bookmark-outline" size={17} color={c.onSurface} />
-            <Text style={styles.headerBtnLabel}>Looks</Text>
+            <Ionicons name="bookmark-outline" size={16} color={c.onSurface} />
             {savedOutfits.length > 0 && (
               <View style={styles.savedBadge}>
                 <Text style={styles.savedBadgeText}>{savedOutfits.length}</Text>
@@ -713,7 +738,7 @@ export function OutfitCanvas({ items }: Props) {
           {/* Share / Export Action */}
           <Pressable
             onPress={handleExportAndShare}
-            hitSlop={8}
+            hitSlop={6}
             style={({ pressed }) => [
               styles.headerShareBtn,
               canvasPieces.length === 0 && styles.headerShareBtnDisabled,
@@ -724,7 +749,7 @@ export function OutfitCanvas({ items }: Props) {
               <ActivityIndicator size="small" color={c.onPrimary} />
             ) : (
               <>
-                <Ionicons name="share-social" size={15} color={c.onPrimary} />
+                <Ionicons name="share-social" size={14} color={c.onPrimary} />
                 <Text style={styles.headerShareBtnText}>Export</Text>
               </>
             )}
@@ -744,68 +769,6 @@ export function OutfitCanvas({ items }: Props) {
         ]}
         {...canvasBoardResponder.panHandlers}
       >
-        {/* Floating Studio Quick-Tools Pill Dock (Hidden when exporting/sharing) */}
-        {!isExporting && (
-          <View style={styles.floatingDock}>
-            {/* Shuffle Tool */}
-            <Pressable
-              onPress={handleShuffle}
-              hitSlop={6}
-              style={({ pressed }) => [styles.dockActionBtn, pressed && styles.dockActionBtnPressed]}
-            >
-              <Ionicons name="shuffle-outline" size={15} color={c.onSurface} />
-              <Text style={styles.dockActionText}>Shuffle</Text>
-            </Pressable>
-
-            <View style={styles.dockDivider} />
-
-            {/* Backdrop Switcher */}
-            <Pressable
-              onPress={() => setShowBackdropModal(true)}
-              hitSlop={6}
-              style={({ pressed }) => [styles.dockActionBtn, pressed && styles.dockActionBtnPressed]}
-            >
-              <View
-                style={[
-                  styles.dockBackdropSwatch,
-                  {
-                    backgroundColor: activeBackdrop.swatch,
-                    borderColor: backdrop === 'silk' ? c.outlineVariant : 'transparent',
-                  },
-                ]}
-              />
-              <Text style={styles.dockActionText}>{activeBackdrop.label}</Text>
-            </Pressable>
-
-            {canvasPieces.length > 0 && (
-              <>
-                <View style={styles.dockDivider} />
-
-                {/* Save Look Button */}
-                <Pressable
-                  onPress={() => setShowSavePrompt(true)}
-                  hitSlop={6}
-                  style={({ pressed }) => [styles.dockSaveBtn, pressed && styles.pressed]}
-                >
-                  <Ionicons name="checkmark-done" size={15} color="#FFFFFF" />
-                  <Text style={styles.dockSaveBtnText}>Save</Text>
-                </Pressable>
-
-                <View style={styles.dockDivider} />
-
-                {/* Clear Board */}
-                <Pressable
-                  onPress={handleClear}
-                  hitSlop={6}
-                  style={({ pressed }) => [styles.dockClearBtn, pressed && styles.pressed]}
-                >
-                  <Ionicons name="trash-outline" size={15} color={c.error} />
-                </Pressable>
-              </>
-            )}
-          </View>
-        )}
-
         {/* Architectural Grid Overlay */}
         {backdrop === 'grid' && (
           <View style={styles.gridOverlay} pointerEvents="none">
@@ -825,7 +788,7 @@ export function OutfitCanvas({ items }: Props) {
           {canvasPieces.length === 0 ? (
             <View style={styles.emptyCanvasHint}>
               <View style={styles.hintIconCircle}>
-                <Ionicons name="sparkles-outline" size={26} color={c.gold} />
+                <Ionicons name="sparkles-outline" size={24} color={c.gold} />
               </View>
               <Text style={styles.hintTitle}>Atelier Lookbook Studio</Text>
               <Text style={styles.hintText}>
@@ -869,8 +832,29 @@ export function OutfitCanvas({ items }: Props) {
             hitSlop={8}
           >
             <View style={styles.drawerHandle} />
-            <Text style={styles.drawerTitle}>Wardrobe Pieces ({filteredDrawerItems.length})</Text>
+            <Text style={styles.drawerTitle}>Pieces ({filteredDrawerItems.length})</Text>
           </Pressable>
+
+          {canvasPieces.length > 0 && (
+            <View style={styles.drawerActions}>
+              <Pressable
+                onPress={() => setShowSavePrompt(true)}
+                hitSlop={6}
+                style={({ pressed }) => [styles.drawerSaveBtn, pressed && styles.pressed]}
+              >
+                <Ionicons name="bookmark" size={13} color={c.gold} />
+                <Text style={styles.drawerSaveText}>Save Look</Text>
+              </Pressable>
+
+              <Pressable
+                onPress={handleClear}
+                hitSlop={6}
+                style={({ pressed }) => [styles.drawerClearBtn, pressed && styles.pressed]}
+              >
+                <Ionicons name="trash-outline" size={14} color={c.error} />
+              </Pressable>
+            </View>
+          )}
         </View>
 
         {drawerExpanded && (
@@ -1223,40 +1207,38 @@ const makeStyles = (c: Palette) =>
       fontSize: 22,
       letterSpacing: -0.3,
     },
-    pieceCountPill: {
-      backgroundColor: c.surfaceContainerHigh,
-      paddingHorizontal: 8,
-      paddingVertical: 2.5,
-      borderRadius: shapes.full,
-    },
-    pieceCountPillText: {
-      fontFamily: fonts.semiBold,
+    canvasSubtitle: {
+      fontFamily: fonts.medium,
       color: c.onSurfaceVariant,
-      fontSize: 11,
+      fontSize: 12,
+      includeFontPadding: false,
     },
     headerRight: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 8,
+      gap: 6,
     },
-    headerBtn: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 5,
+    headerIconBtn: {
+      width: 34,
       height: 34,
-      paddingHorizontal: 11,
       borderRadius: shapes.full,
       backgroundColor: c.surfaceContainerHigh,
       borderWidth: 1,
       borderColor: c.outlineVariant,
+      alignItems: 'center',
+      justifyContent: 'center',
       position: 'relative',
     },
-    headerBtnLabel: {
-      fontFamily: fonts.semiBold,
-      color: c.onSurface,
-      fontSize: 12,
+    headerBackdropDot: {
+      width: 16,
+      height: 16,
+      borderRadius: 8,
+      borderWidth: 1,
     },
     savedBadge: {
+      position: 'absolute',
+      top: -4,
+      right: -4,
       backgroundColor: c.gold,
       borderRadius: 7,
       minWidth: 14,
@@ -1264,7 +1246,6 @@ const makeStyles = (c: Palette) =>
       alignItems: 'center',
       justifyContent: 'center',
       paddingHorizontal: 3,
-      marginLeft: 2,
     },
     savedBadgeText: {
       fontFamily: fonts.extraBold,
@@ -1507,25 +1488,57 @@ const makeStyles = (c: Palette) =>
       paddingBottom: 10,
     },
     drawerHeader: {
+      flexDirection: 'row',
       alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 20,
       paddingBottom: 8,
     },
     drawerToggle: {
+      flexDirection: 'row',
       alignItems: 'center',
-      width: '100%',
+      gap: 8,
     },
     drawerHandle: {
-      width: 32,
-      height: 4,
+      width: 24,
+      height: 3.5,
       borderRadius: 2,
       backgroundColor: c.outlineVariant,
-      marginBottom: 6,
     },
     drawerTitle: {
       fontFamily: fonts.bold,
       color: c.onSurface,
       fontSize: 13,
-      letterSpacing: 0.3,
+      letterSpacing: 0.2,
+    },
+    drawerActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    drawerSaveBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+      backgroundColor: c.goldContainer,
+      paddingHorizontal: 10,
+      paddingVertical: 4.5,
+      borderRadius: shapes.full,
+      borderWidth: 1,
+      borderColor: c.gold,
+    },
+    drawerSaveText: {
+      fontFamily: fonts.bold,
+      color: c.gold,
+      fontSize: 11.5,
+    },
+    drawerClearBtn: {
+      width: 28,
+      height: 28,
+      borderRadius: shapes.full,
+      backgroundColor: c.surfaceContainerHigh,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     drawerCategoryRow: {
       paddingHorizontal: 16,

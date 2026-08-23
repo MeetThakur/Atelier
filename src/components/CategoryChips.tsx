@@ -25,7 +25,6 @@ const SORT_OPTIONS: { id: SortMode; label: string; description: string; icon: ke
 export function CategoryChips({
   value,
   onChange,
-  counts,
   activeFilterCount = 0,
   onOpenFilter,
   sortMode = 'newest',
@@ -74,7 +73,6 @@ export function CategoryChips({
         >
           {categories.map((item) => {
             const isSelected = item === value;
-            const count = counts ? counts[item] : undefined;
             const dotColor = {
               All: c.gold,
               Tops: c.catTops,
@@ -88,20 +86,14 @@ export function CategoryChips({
               <Pressable
                 key={item}
                 onPress={() => handleSelect(item)}
-                hitSlop={6}
+                hitSlop={4}
                 style={({ pressed }) => [
                   styles.chip,
                   isSelected ? styles.chipSelected : styles.chipUnselected,
                   pressed && styles.pressed,
                 ]}
               >
-                <View
-                  style={[
-                    styles.activeDot,
-                    { backgroundColor: dotColor },
-                    isSelected && styles.activeDotSelected,
-                  ]}
-                />
+                <View style={[styles.dot, { backgroundColor: dotColor }]} />
                 <Text
                   style={[
                     styles.chipText,
@@ -110,43 +102,24 @@ export function CategoryChips({
                 >
                   {item}
                 </Text>
-                {count !== undefined && (
-                  <View
-                    style={[
-                      styles.countBadge,
-                      isSelected ? styles.countBadgeSelected : styles.countBadgeUnselected,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.countText,
-                        isSelected ? styles.countTextSelected : styles.countTextUnselected,
-                      ]}
-                    >
-                      {count}
-                    </Text>
-                  </View>
-                )}
               </Pressable>
             );
           })}
 
-          <View style={styles.divider} />
-
-          {/* Filter Action Button */}
+          {/* Filter Action */}
           {onOpenFilter && (
             <Pressable
               onPress={handleFilterPress}
-              hitSlop={6}
+              hitSlop={4}
               style={({ pressed }) => [
-                styles.actionChip,
-                hasFilters && styles.actionChipActive,
+                styles.actionBtn,
+                hasFilters && styles.actionBtnActive,
                 pressed && styles.pressed,
               ]}
             >
               <Ionicons
                 name={hasFilters ? 'options' : 'options-outline'}
-                size={14}
+                size={13}
                 color={hasFilters ? c.onPrimary : c.onSurfaceVariant}
               />
               <Text
@@ -160,20 +133,20 @@ export function CategoryChips({
             </Pressable>
           )}
 
-          {/* Sort Action Button */}
+          {/* Sort Action */}
           {onSortChange && (
             <Pressable
               onPress={handleOpenSort}
-              hitSlop={6}
+              hitSlop={4}
               style={({ pressed }) => [
-                styles.actionChip,
-                isCustomSort && styles.actionChipActive,
+                styles.actionBtn,
+                isCustomSort && styles.actionBtnActive,
                 pressed && styles.pressed,
               ]}
             >
               <Ionicons
                 name={currentSortOption.icon}
-                size={14}
+                size={13}
                 color={isCustomSort ? c.onPrimary : c.onSurfaceVariant}
               />
               <Text
@@ -184,11 +157,6 @@ export function CategoryChips({
               >
                 {currentSortOption.label.split(' ')[0]}
               </Text>
-              <Ionicons
-                name="chevron-down"
-                size={10}
-                color={isCustomSort ? c.onPrimary : c.onSurfaceVariant}
-              />
             </Pressable>
           )}
         </ScrollView>
@@ -236,9 +204,7 @@ export function CategoryChips({
                     </View>
 
                     {isSelected && (
-                      <View style={styles.checkWrap}>
-                        <Ionicons name="checkmark" size={16} color={c.gold} />
-                      </View>
+                      <Ionicons name="checkmark" size={16} color={c.gold} />
                     )}
                   </Pressable>
                 );
@@ -254,117 +220,65 @@ export function CategoryChips({
 const makeStyles = (c: Palette) =>
   StyleSheet.create({
     container: {
-      paddingVertical: 2,
+      paddingVertical: 4,
       marginBottom: 6,
     },
     row: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 7,
-      paddingVertical: 4,
-      paddingRight: 16,
+      gap: 6,
+      paddingVertical: 2,
+      paddingRight: 14,
     },
     chip: {
       flexDirection: 'row',
       alignItems: 'center',
-      height: 36,
+      height: 32,
       borderRadius: shapes.full,
-      paddingHorizontal: 14,
-      gap: 6,
-      borderWidth: 1,
+      paddingHorizontal: 12,
+      gap: 5,
     },
     chipSelected: {
       backgroundColor: c.primary,
-      borderColor: c.primary,
-      shadowColor: '#000',
-      shadowOpacity: 0.12,
-      shadowRadius: 6,
-      shadowOffset: { width: 0, height: 2 },
-      elevation: 2,
     },
     chipUnselected: {
-      backgroundColor: c.cardBg,
-      borderColor: c.outlineVariant,
+      backgroundColor: c.surfaceContainerHigh,
     },
-    activeDot: {
-      width: 6,
-      height: 6,
-      borderRadius: 3,
-    },
-    activeDotSelected: {
-      width: 7,
-      height: 7,
-      borderRadius: 3.5,
-      borderWidth: 1,
-      borderColor: '#FFFFFF',
+    dot: {
+      width: 5,
+      height: 5,
+      borderRadius: 2.5,
     },
     chipText: {
-      fontSize: 13,
+      fontSize: 12.5,
       includeFontPadding: false,
-      textAlignVertical: 'center',
     },
     chipTextSelected: {
       fontFamily: fonts.bold,
       color: c.onPrimary,
-      letterSpacing: 0.1,
     },
     chipTextUnselected: {
       fontFamily: fonts.medium,
       color: c.onSurfaceVariant,
     },
-    countBadge: {
-      minWidth: 18,
-      height: 18,
-      borderRadius: shapes.full,
-      paddingHorizontal: 5,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    countBadgeSelected: {
-      backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    },
-    countBadgeUnselected: {
-      backgroundColor: c.surfaceContainerHighest,
-    },
-    countText: {
-      fontFamily: fonts.extraBold,
-      fontSize: 10,
-      includeFontPadding: false,
-      textAlignVertical: 'center',
-    },
-    countTextSelected: {
-      color: c.onPrimary,
-    },
-    countTextUnselected: {
-      color: c.onSurfaceVariant,
-    },
-    divider: {
-      width: 1,
-      height: 18,
-      backgroundColor: c.outlineVariant,
-      marginHorizontal: 2,
-    },
-    actionChip: {
+    actionBtn: {
       flexDirection: 'row',
       alignItems: 'center',
-      height: 36,
+      height: 32,
       borderRadius: shapes.full,
-      paddingHorizontal: 12,
-      gap: 5,
-      borderWidth: 1,
-      borderColor: c.outlineVariant,
-      backgroundColor: c.cardBg,
+      paddingHorizontal: 10,
+      gap: 4,
+      backgroundColor: c.surfaceContainerHigh,
     },
-    actionChipActive: {
+    actionBtnActive: {
       backgroundColor: c.primary,
-      borderColor: c.primary,
     },
     actionText: {
-      fontSize: 12,
+      fontSize: 11.5,
       includeFontPadding: false,
     },
     actionTextInactive: {
-      fontFamily: fonts.semiBold,
+      fontFamily: fonts.medium,
       color: c.onSurfaceVariant,
     },
     actionTextActive: {
@@ -455,11 +369,8 @@ const makeStyles = (c: Palette) =>
       color: c.onSurfaceVariant,
       fontSize: 11.5,
     },
-    checkWrap: {
-      paddingHorizontal: 4,
-    },
     pressed: {
-      opacity: 0.8,
+      opacity: 0.75,
       transform: [{ scale: 0.96 }],
     },
   });
