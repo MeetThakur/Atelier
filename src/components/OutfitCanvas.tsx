@@ -726,6 +726,18 @@ export function OutfitCanvas({ items }: Props) {
             )}
           </Pressable>
 
+          {/* Save Look Action */}
+          {canvasPieces.length > 0 && (
+            <Pressable
+              onPress={() => setShowSavePrompt(true)}
+              hitSlop={6}
+              style={({ pressed }) => [styles.headerSaveBtn, pressed && styles.pressed]}
+            >
+              <Ionicons name="bookmark" size={13} color={c.gold} />
+              <Text style={styles.headerSaveBtnText}>Save</Text>
+            </Pressable>
+          )}
+
           {/* Share / Export Action */}
           <Pressable
             onPress={handleExportAndShare}
@@ -850,59 +862,46 @@ export function OutfitCanvas({ items }: Props) {
 
         {drawerExpanded && (
           <>
-            {/* Category Filter Chips & Quick Save */}
-            <View style={styles.drawerControlRow}>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.drawerCategoryRow}
-              >
-                {categories.map((cat) => {
-                  const isSelected = drawerCategory === cat;
-                  const dotColor = {
-                    All: c.gold,
-                    Tops: c.catTops,
-                    Bottoms: c.catBottoms,
-                    Dresses: c.catDresses,
-                    Shoes: c.catShoes,
-                    Accessories: c.catAccessories,
-                  }[cat];
+            {/* Category Filter Chips */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.drawerCategoryRow}
+            >
+              {categories.map((cat) => {
+                const isSelected = drawerCategory === cat;
+                const dotColor = {
+                  All: c.gold,
+                  Tops: c.catTops,
+                  Bottoms: c.catBottoms,
+                  Dresses: c.catDresses,
+                  Shoes: c.catShoes,
+                  Accessories: c.catAccessories,
+                }[cat];
 
-                  return (
-                    <Pressable
-                      key={cat}
-                      onPress={() => setDrawerCategory(cat)}
-                      hitSlop={4}
+                return (
+                  <Pressable
+                    key={cat}
+                    onPress={() => setDrawerCategory(cat)}
+                    hitSlop={4}
+                    style={[
+                      styles.drawerCatChip,
+                      isSelected && styles.drawerCatChipActive,
+                    ]}
+                  >
+                    <View style={[styles.drawerDot, { backgroundColor: dotColor }]} />
+                    <Text
                       style={[
-                        styles.drawerCatChip,
-                        isSelected && styles.drawerCatChipActive,
+                        styles.drawerCatText,
+                        isSelected && styles.drawerCatTextActive,
                       ]}
                     >
-                      <View style={[styles.drawerDot, { backgroundColor: dotColor }]} />
-                      <Text
-                        style={[
-                          styles.drawerCatText,
-                          isSelected && styles.drawerCatTextActive,
-                        ]}
-                      >
-                        {cat}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
-
-              {canvasPieces.length > 0 && (
-                <Pressable
-                  onPress={() => setShowSavePrompt(true)}
-                  hitSlop={6}
-                  style={({ pressed }) => [styles.drawerSaveBtn, pressed && styles.pressed]}
-                >
-                  <Ionicons name="bookmark" size={12} color={c.gold} />
-                  <Text style={styles.drawerSaveText}>Save</Text>
-                </Pressable>
-              )}
-            </View>
+                      {cat}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
 
             {/* Pieces Horizontal Tray */}
             <ScrollView
@@ -1255,6 +1254,22 @@ const makeStyles = (c: Palette) =>
       fontFamily: fonts.extraBold,
       color: '#FFFFFF',
       fontSize: 8.5,
+    },
+    headerSaveBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+      height: 34,
+      paddingHorizontal: 12,
+      borderRadius: shapes.full,
+      backgroundColor: c.goldContainer,
+      borderWidth: 1,
+      borderColor: c.gold,
+    },
+    headerSaveBtnText: {
+      fontFamily: fonts.bold,
+      color: c.gold,
+      fontSize: 12,
     },
     headerShareBtn: {
       flexDirection: 'row',
