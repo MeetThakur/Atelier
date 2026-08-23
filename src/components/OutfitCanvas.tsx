@@ -27,14 +27,26 @@ import { useTheme, fonts, shapes, type Palette } from '../theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-type CanvasBackdrop = 'silk' | 'linen' | 'grid' | 'noir';
+type CanvasBackdrop = 'silk' | 'linen' | 'sage' | 'terracotta' | 'plum' | 'azure' | 'noir' | 'grid';
 
-const BACKDROP_LABELS: Record<CanvasBackdrop, string> = {
-  silk: 'Silk',
-  linen: 'Linen',
-  grid: 'Grid',
-  noir: 'Noir',
-};
+const BACKDROPS: {
+  id: CanvasBackdrop;
+  label: string;
+  sublabel: string;
+  bgLight: string;
+  bgDark: string;
+  swatch: string;
+  icon: keyof typeof Ionicons.glyphMap;
+}[] = [
+  { id: 'silk', label: 'Silk Cream', sublabel: 'Neutral Warm Canvas', bgLight: '#FAF7F2', bgDark: '#0E0E12', swatch: '#FAF7F2', icon: 'color-wand-outline' },
+  { id: 'linen', label: 'Warm Linen', sublabel: 'Natural Organic Weave', bgLight: '#EFE6D8', bgDark: '#201D19', swatch: '#EFE6D8', icon: 'color-filter-outline' },
+  { id: 'sage', label: 'French Sage', sublabel: 'Botanical Eucalyptus', bgLight: '#E5EDE7', bgDark: '#13241A', swatch: '#D0E0D4', icon: 'leaf-outline' },
+  { id: 'terracotta', label: 'Tuscan Clay', sublabel: 'Sunbaked Adobe Rust', bgLight: '#F3E4DF', bgDark: '#2B1612', swatch: '#E6CEC6', icon: 'flame-outline' },
+  { id: 'plum', label: 'Mulberry Velvet', sublabel: 'Parisian Haute Mauve', bgLight: '#F1E6F3', bgDark: '#241427', swatch: '#E0CEE4', icon: 'sparkles-outline' },
+  { id: 'azure', label: 'Chambray Sky', sublabel: 'Coastal Frost Azure', bgLight: '#E4EDF5', bgDark: '#13212E', swatch: '#C8DCEE', icon: 'water-outline' },
+  { id: 'noir', label: 'Editorial Noir', sublabel: 'High-Contrast Obsidian', bgLight: '#181716', bgDark: '#070708', swatch: '#181716', icon: 'contrast-outline' },
+  { id: 'grid', label: 'Drafting Grid', sublabel: 'Architectural Crosshairs', bgLight: '#FAF7F2', bgDark: '#0E0E12', swatch: '#D8D2C5', icon: 'grid-outline' },
+];
 
 let instanceSeq = 0;
 const nextInstanceId = (prefix: string) => `${prefix}-${++instanceSeq}`;
@@ -463,13 +475,16 @@ export function OutfitCanvas({ items }: Props) {
     ]);
   };
 
+  const [showBackdropModal, setShowBackdropModal] = useState(false);
+
+  const activeBackdrop = BACKDROPS.find((b) => b.id === backdrop) || BACKDROPS[0];
+
   const handleCycleBackdrop = () => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setBackdrop((current) => {
-      if (current === 'silk') return 'linen';
-      if (current === 'linen') return 'grid';
-      if (current === 'grid') return 'noir';
-      return 'silk';
+      const idx = BACKDROPS.findIndex((b) => b.id === current);
+      const nextIdx = (idx + 1) % BACKDROPS.length;
+      return BACKDROPS[nextIdx].id;
     });
   };
 
@@ -723,9 +738,9 @@ export function OutfitCanvas({ items }: Props) {
         collapsable={false}
         style={[
           styles.canvasBoard,
-          backdrop === 'linen' && styles.canvasBoardLinen,
-          backdrop === 'noir' && styles.canvasBoardNoir,
-          backdrop === 'grid' && styles.canvasBoardGrid,
+          {
+            backgroundColor: c.surface === '#0E0E12' ? activeBackdrop.bgDark : activeBackdrop.bgLight,
+          },
         ]}
         {...canvasBoardResponder.panHandlers}
       >
@@ -746,24 +761,20 @@ export function OutfitCanvas({ items }: Props) {
 
             {/* Backdrop Switcher */}
             <Pressable
-              onPress={handleCycleBackdrop}
+              onPress={() => setShowBackdropModal(true)}
               hitSlop={6}
               style={({ pressed }) => [styles.dockActionBtn, pressed && styles.dockActionBtnPressed]}
             >
-              <Ionicons
-                name={
-                  backdrop === 'grid'
-                    ? 'grid-outline'
-                    : backdrop === 'linen'
-                    ? 'color-filter-outline'
-                    : backdrop === 'noir'
-                    ? 'contrast-outline'
-                    : 'color-wand-outline'
-                }
-                size={15}
-                color={c.gold}
+              <View
+                style={[
+                  styles.dockBackdropSwatch,
+                  {
+                    backgroundColor: activeBackdrop.swatch,
+                    borderColor: backdrop === 'silk' ? c.outlineVariant : 'transparent',
+                  },
+                ]}
               />
-              <Text style={styles.dockActionText}>{BACKDROP_LABELS[backdrop]}</Text>
+              <Text style={styles.dockActionText}>{activeBackdrop.label}</Text>
             </Pressable>
 
             {canvasPieces.length > 0 && (
@@ -1074,6 +1085,72 @@ export function OutfitCanvas({ items }: Props) {
           </View>
         </View>
       </Modal>
+
+      {/* Backdrop Atmosphere Picker Modal */}
+      <Modal
+        visible={showBackdropModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowBackdropModal(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setShowBackdropModal(false)} />
+          <View style={styles.backdropModalCard}>
+            <View style={styles.savedModalHeader}>
+              <View>
+                <Text style={styles.savedModalTitle}>Studio Backdrops</Text>
+                <Text style={styles.backdropModalSubtitle}>Choose canvas lighting & atmosphere</Text>
+              </View>
+              <Pressable onPress={() => setShowBackdropModal(false)} style={styles.closeSavedBtn}>
+                <Ionicons name="close" size={20} color={c.onSurface} />
+              </Pressable>
+            </View>
+
+            <ScrollView contentContainerStyle={styles.backdropGridList}>
+              {BACKDROPS.map((b) => {
+                const isSelected = b.id === backdrop;
+                const previewBg = c.surface === '#0E0E12' ? b.bgDark : b.bgLight;
+                return (
+                  <Pressable
+                    key={b.id}
+                    onPress={() => {
+                      void Haptics.selectionAsync();
+                      setBackdrop(b.id);
+                      setShowBackdropModal(false);
+                    }}
+                    style={({ pressed }) => [
+                      styles.backdropOptionCard,
+                      isSelected && styles.backdropOptionCardSelected,
+                      pressed && styles.pressed,
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.backdropOptionPreview,
+                        { backgroundColor: previewBg },
+                        b.id === 'silk' && { borderWidth: 1, borderColor: c.outlineVariant },
+                      ]}
+                    >
+                      <Ionicons
+                        name={b.icon}
+                        size={20}
+                        color={isSelected ? c.gold : c.onSurfaceVariant}
+                      />
+                    </View>
+                    <View style={styles.backdropOptionInfo}>
+                      <Text style={styles.backdropOptionName}>{b.label}</Text>
+                      <Text style={styles.backdropOptionSub}>{b.sublabel}</Text>
+                    </View>
+                    {isSelected && (
+                      <Ionicons name="checkmark-circle" size={22} color={c.gold} />
+                    )}
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -1248,10 +1325,16 @@ const makeStyles = (c: Palette) =>
     dockActionBtn: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 5,
+      gap: 6,
       paddingHorizontal: 8,
       paddingVertical: 5,
       borderRadius: shapes.full,
+    },
+    dockBackdropSwatch: {
+      width: 14,
+      height: 14,
+      borderRadius: 7,
+      borderWidth: 1,
     },
     dockActionBtnPressed: {
       backgroundColor: c.surfaceContainerHigh,
@@ -1750,6 +1833,61 @@ const makeStyles = (c: Palette) =>
     },
     deleteOutfitBtn: {
       padding: 6,
+    },
+    backdropModalCard: {
+      width: '100%',
+      maxWidth: 380,
+      maxHeight: '75%',
+      backgroundColor: c.surfaceContainerLow,
+      borderRadius: shapes.xxl,
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: c.outlineVariant,
+    },
+    backdropModalSubtitle: {
+      fontFamily: fonts.medium,
+      color: c.onSurfaceVariant,
+      fontSize: 12,
+      marginTop: 2,
+    },
+    backdropGridList: {
+      padding: 16,
+      gap: 10,
+    },
+    backdropOptionCard: {
+      backgroundColor: c.cardBg,
+      borderRadius: shapes.xl,
+      padding: 12,
+      borderWidth: 1,
+      borderColor: c.outlineVariant,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+    },
+    backdropOptionCardSelected: {
+      borderColor: c.gold,
+      backgroundColor: c.surfaceContainerHigh,
+    },
+    backdropOptionPreview: {
+      width: 44,
+      height: 44,
+      borderRadius: shapes.lg,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    backdropOptionInfo: {
+      flex: 1,
+    },
+    backdropOptionName: {
+      fontFamily: fonts.bold,
+      color: c.onSurface,
+      fontSize: 14.5,
+      marginBottom: 1,
+    },
+    backdropOptionSub: {
+      fontFamily: fonts.medium,
+      color: c.onSurfaceVariant,
+      fontSize: 11.5,
     },
     pressed: {
       opacity: 0.75,
