@@ -92,8 +92,8 @@ const makeStyles = (c: Palette) =>
     title: {
       fontFamily: fonts.displayBold,
       color: c.onSurface,
-      fontSize: 34,
-      letterSpacing: -0.8,
+      fontSize: 32,
+      letterSpacing: 0.2,
     },
     counterCapsule: {
       backgroundColor: c.primaryContainer,

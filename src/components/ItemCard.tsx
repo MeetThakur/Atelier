@@ -233,7 +233,7 @@ const makeStyles = (c: Palette) =>
       fontFamily: fonts.displayMedium,
       color: c.onSurface,
       fontSize: 14.5,
-      letterSpacing: -0.2,
+      letterSpacing: 0.1,
     },
     colorDot: {
       width: 9,

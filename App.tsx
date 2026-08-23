@@ -4,17 +4,19 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
 import {
   useFonts,
+  Outfit_400Regular,
+  Outfit_500Medium,
   Outfit_600SemiBold,
   Outfit_700Bold,
   Outfit_800ExtraBold,
 } from '@expo-google-fonts/outfit';
 import {
-  Urbanist_400Regular,
-  Urbanist_500Medium,
-  Urbanist_600SemiBold,
-  Urbanist_700Bold,
-  Urbanist_800ExtraBold,
-} from '@expo-google-fonts/urbanist';
+  PlusJakartaSans_400Regular,
+  PlusJakartaSans_500Medium,
+  PlusJakartaSans_600SemiBold,
+  PlusJakartaSans_700Bold,
+  PlusJakartaSans_800ExtraBold,
+} from '@expo-google-fonts/plus-jakarta-sans';
 import { Header } from './src/components/Header';
 import { SearchBar } from './src/components/SearchBar';
 import { CategoryChips } from './src/components/CategoryChips';
@@ -37,14 +39,16 @@ const SORT_ORDER: SortMode[] = ['newest', 'favorites', 'worn', 'name'];
 
 export default function App() {
   const [fontsLoaded, fontError] = useFonts({
+    Outfit_400Regular,
+    Outfit_500Medium,
     Outfit_600SemiBold,
     Outfit_700Bold,
     Outfit_800ExtraBold,
-    Urbanist_400Regular,
-    Urbanist_500Medium,
-    Urbanist_600SemiBold,
-    Urbanist_700Bold,
-    Urbanist_800ExtraBold,
+    PlusJakartaSans_400Regular,
+    PlusJakartaSans_500Medium,
+    PlusJakartaSans_600SemiBold,
+    PlusJakartaSans_700Bold,
+    PlusJakartaSans_800ExtraBold,
   });
 
   const c = useTheme();

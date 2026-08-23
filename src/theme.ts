@@ -1,13 +1,13 @@
 import { useColorScheme } from 'react-native';
 
 export const fonts = {
-  regular: 'Urbanist_400Regular',
-  medium: 'Urbanist_500Medium',
-  semiBold: 'Urbanist_600SemiBold',
-  bold: 'Urbanist_700Bold',
-  extraBold: 'Urbanist_800ExtraBold',
-  displayMedium: 'Urbanist_600SemiBold',
-  displaySemiBold: 'Urbanist_700Bold',
+  regular: 'PlusJakartaSans_400Regular',
+  medium: 'PlusJakartaSans_500Medium',
+  semiBold: 'PlusJakartaSans_600SemiBold',
+  bold: 'PlusJakartaSans_700Bold',
+  extraBold: 'PlusJakartaSans_800ExtraBold',
+  displayMedium: 'Outfit_600SemiBold',
+  displaySemiBold: 'Outfit_700Bold',
   displayBold: 'Outfit_700Bold',
   displayExtraBold: 'Outfit_800ExtraBold',
 } as const;
