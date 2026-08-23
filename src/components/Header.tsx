@@ -21,18 +21,26 @@ export function Header({ greeting, totalPieces, searchActive, onToggleSearch }: 
     toggleTheme();
   };
 
+  const handleSearchToggle = () => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onToggleSearch();
+  };
+
   return (
     <View style={styles.header}>
       <View style={styles.leftCol}>
-        <View style={styles.metaRow}>
-          <Text style={styles.dateText}>{formatHeaderDate().toUpperCase()}</Text>
-          <Text style={styles.greetingText}>• {greeting.toUpperCase()}</Text>
+        <View style={styles.kickerRow}>
+          <Text style={styles.kickerDate}>{formatHeaderDate().toUpperCase()}</Text>
+          <View style={styles.kickerDot} />
+          <Text style={styles.kickerGreeting}>{greeting.toUpperCase()}</Text>
         </View>
+
         <View style={styles.titleRow}>
           <Text style={styles.title}>Atelier</Text>
           {totalPieces !== null && totalPieces !== undefined && (
-            <View style={styles.counterCapsule}>
-              <Text style={styles.counterText}>
+            <View style={styles.pieceCountPill}>
+              <View style={styles.shimmerDot} />
+              <Text style={styles.pieceCountText}>
                 {totalPieces} {totalPieces === 1 ? 'PIECE' : 'PIECES'}
               </Text>
             </View>
@@ -44,27 +52,27 @@ export function Header({ greeting, totalPieces, searchActive, onToggleSearch }: 
         <Pressable
           accessibilityLabel={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
           onPress={handleThemeToggle}
-          style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
+          style={({ pressed }) => [styles.glassBtn, pressed && styles.btnPressed]}
         >
           <Ionicons
             name={isDark ? 'sunny-outline' : 'moon-outline'}
-            size={19}
+            size={18}
             color={c.onSurface}
           />
         </Pressable>
 
         <Pressable
           accessibilityLabel="Search archive"
-          onPress={onToggleSearch}
+          onPress={handleSearchToggle}
           style={({ pressed }) => [
-            styles.iconButton,
-            searchActive && styles.iconButtonActive,
-            pressed && styles.pressed,
+            styles.glassBtn,
+            searchActive && styles.glassBtnActive,
+            pressed && styles.btnPressed,
           ]}
         >
           <Ionicons
             name={searchActive ? 'close' : 'search-outline'}
-            size={19}
+            size={18}
             color={searchActive ? c.onPrimary : c.onSurface}
           />
         </Pressable>
@@ -79,55 +87,73 @@ const makeStyles = (c: Palette) =>
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'flex-end',
-      paddingTop: 18,
-      paddingBottom: 10,
+      paddingTop: 20,
+      paddingBottom: 12,
     },
     leftCol: {
       flex: 1,
     },
-    metaRow: {
+    kickerRow: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 6,
-      marginBottom: 3,
+      marginBottom: 2,
     },
-    dateText: {
+    kickerDate: {
       fontFamily: fonts.bold,
-      color: c.tertiary,
+      color: c.gold,
       fontSize: 10,
-      letterSpacing: 1.2,
+      letterSpacing: 1.4,
+      includeFontPadding: false,
     },
-    greetingText: {
+    kickerDot: {
+      width: 3,
+      height: 3,
+      borderRadius: 1.5,
+      backgroundColor: c.outline,
+    },
+    kickerGreeting: {
       fontFamily: fonts.medium,
       color: c.onSurfaceVariant,
       fontSize: 10,
-      letterSpacing: 0.8,
+      letterSpacing: 0.9,
+      includeFontPadding: false,
     },
     titleRow: {
       flexDirection: 'row',
       alignItems: 'baseline',
-      gap: 12,
+      gap: 10,
     },
     title: {
       fontFamily: fonts.displayBold,
       color: c.onSurface,
-      fontSize: 32,
-      letterSpacing: 0.2,
+      fontSize: 34,
+      letterSpacing: -0.4,
     },
-    counterCapsule: {
+    pieceCountPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
       backgroundColor: c.primaryContainer,
       borderRadius: shapes.full,
-      paddingHorizontal: 10,
-      paddingVertical: 4,
+      paddingHorizontal: 9,
+      paddingVertical: 3.5,
       alignSelf: 'center',
+      borderWidth: 1,
+      borderColor: c.outlineVariant,
     },
-    counterText: {
+    shimmerDot: {
+      width: 5,
+      height: 5,
+      borderRadius: 2.5,
+      backgroundColor: c.gold,
+    },
+    pieceCountText: {
       fontFamily: fonts.bold,
       color: c.onPrimaryContainer,
-      fontSize: 10,
+      fontSize: 9.5,
       letterSpacing: 0.8,
       includeFontPadding: false,
-      textAlignVertical: 'center',
     },
     actionsRow: {
       flexDirection: 'row',
@@ -135,21 +161,26 @@ const makeStyles = (c: Palette) =>
       gap: 8,
       paddingBottom: 4,
     },
-    iconButton: {
+    glassBtn: {
       width: 40,
       height: 40,
       borderRadius: shapes.full,
-      backgroundColor: c.surfaceContainerLow,
+      backgroundColor: c.cardBg,
       borderWidth: 1,
       borderColor: c.outlineVariant,
       alignItems: 'center',
       justifyContent: 'center',
+      shadowColor: '#000',
+      shadowOpacity: 0.04,
+      shadowRadius: 6,
+      shadowOffset: { width: 0, height: 2 },
+      elevation: 1,
     },
-    iconButtonActive: {
+    glassBtnActive: {
       backgroundColor: c.primary,
       borderColor: c.primary,
     },
-    pressed: {
+    btnPressed: {
       opacity: 0.75,
       transform: [{ scale: 0.94 }],
     },

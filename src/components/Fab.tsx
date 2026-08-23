@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme, fonts, shapes, type Palette } from '../theme';
@@ -18,11 +18,13 @@ export function Fab({ onPress }: Props) {
 
   return (
     <Pressable
-      accessibilityLabel="Add clothing piece"
+      accessibilityLabel="Add piece to archive"
       onPress={handlePress}
       style={({ pressed }) => [styles.fab, pressed && styles.pressed]}
     >
-      <Ionicons name="add" size={20} color={c.onPrimary} />
+      <View style={styles.iconWrap}>
+        <Ionicons name="add" size={18} color={c.onPrimary} />
+      </View>
       <Text style={styles.label}>Add Piece</Text>
     </Pressable>
   );
@@ -36,25 +38,35 @@ const makeStyles = (c: Palette) =>
       bottom: 28,
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 6,
-      height: 50,
-      paddingHorizontal: 20,
+      gap: 8,
+      height: 52,
+      paddingHorizontal: 18,
       borderRadius: shapes.full,
       backgroundColor: c.primary,
       shadowColor: '#000',
-      shadowOpacity: 0.22,
-      shadowRadius: 12,
-      shadowOffset: { width: 0, height: 6 },
-      elevation: 6,
+      shadowOpacity: 0.25,
+      shadowRadius: 16,
+      shadowOffset: { width: 0, height: 8 },
+      elevation: 7,
+      borderWidth: 1,
+      borderColor: 'rgba(255, 255, 255, 0.12)',
+    },
+    iconWrap: {
+      width: 26,
+      height: 26,
+      borderRadius: 13,
+      backgroundColor: 'rgba(255, 255, 255, 0.18)',
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     label: {
       fontFamily: fonts.bold,
       color: c.onPrimary,
-      fontSize: 14,
-      letterSpacing: 0.2,
+      fontSize: 14.5,
+      letterSpacing: 0.3,
     },
     pressed: {
-      transform: [{ scale: 0.95 }],
+      transform: [{ scale: 0.94 }],
       opacity: 0.9,
     },
   });

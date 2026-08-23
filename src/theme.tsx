@@ -30,94 +30,102 @@ export const shapes = {
 
 export type Shapes = typeof shapes;
 
-// Editorial Minimalist Light Palette (Warm Alabaster + Crisp White Card + Espresso + Champagne)
+// Haute Editorial Light Palette (Silk Cream + Crisp Gallery Card + Rich Espresso + Champagne Gold)
 export const light = {
-  primary: '#1A1816',
-  onPrimary: '#FAF8F5',
-  primaryContainer: '#EDE8E1',
-  onPrimaryContainer: '#1A1816',
+  primary: '#171614',
+  onPrimary: '#FDFBF7',
+  primaryContainer: '#EFEBE3',
+  onPrimaryContainer: '#171614',
 
-  secondary: '#8C8275',
+  secondary: '#827B70',
   onSecondary: '#FFFFFF',
-  secondaryContainer: '#F2EFEB',
-  onSecondaryContainer: '#2D2924',
+  secondaryContainer: '#F3EFE9',
+  onSecondaryContainer: '#2B2722',
 
-  tertiary: '#C47B57',
+  tertiary: '#C07550',
   onTertiary: '#FFFFFF',
-  tertiaryContainer: '#FCEEE8',
-  onTertiaryContainer: '#66321A',
+  tertiaryContainer: '#FBECE5',
+  onTertiaryContainer: '#5C2D18',
+
+  gold: '#C49B4B',
+  onGold: '#FFFFFF',
+  goldContainer: '#FBF5E6',
 
   accent: '#D4AF37',
-  onAccent: '#1A1816',
+  onAccent: '#171614',
   accentContainer: '#FDF7E7',
 
-  error: '#BA3B34',
+  error: '#B83832',
   errorContainer: '#FCEBEA',
   onErrorContainer: '#54120E',
 
-  surface: '#F7F5F0',
-  onSurface: '#1A1816',
-  surfaceVariant: '#EFECE6',
-  onSurfaceVariant: '#78726A',
+  surface: '#FAF7F2',
+  onSurface: '#171614',
+  surfaceVariant: '#EDE8E0',
+  onSurfaceVariant: '#7D766C',
 
   surfaceContainerLowest: '#FFFFFF',
   surfaceContainerLow: '#FFFFFF',
   surfaceContainer: '#FFFFFF',
-  surfaceContainerHigh: '#F4F0E8',
-  surfaceContainerHighest: '#ECE8DF',
+  surfaceContainerHigh: '#F4EFE6',
+  surfaceContainerHighest: '#EBE5DA',
 
   cardBg: '#FFFFFF',
-  imageBg: '#F3EFE8',
+  imageBg: '#F5F2EB',
 
   outline: '#C4BEB4',
-  outlineVariant: '#EAE5DC',
-  scrim: 'rgba(18, 16, 14, 0.45)',
-  glass: 'rgba(255, 255, 255, 0.75)',
+  outlineVariant: '#EAE4D8',
+  scrim: 'rgba(18, 16, 14, 0.48)',
+  glass: 'rgba(255, 255, 255, 0.85)',
 } as const;
 
-// Editorial Minimalist Dark Palette (Obsidian Noir + Elevated Card + Warm Ivory)
+// Haute Editorial Dark Palette (Obsidian Velvet + Elevated Studio Card + Warm Ivory + Pale Gold)
 export const dark = {
-  primary: '#F5F2EB',
-  onPrimary: '#121214',
-  primaryContainer: '#28272E',
-  onPrimaryContainer: '#F5F2EB',
+  primary: '#F6F3EC',
+  onPrimary: '#0E0E12',
+  primaryContainer: '#26252C',
+  onPrimaryContainer: '#F6F3EC',
 
-  secondary: '#A69E94',
-  onSecondary: '#121214',
-  secondaryContainer: '#232228',
-  onSecondaryContainer: '#E6E1D8',
+  secondary: '#A39C92',
+  onSecondary: '#0E0E12',
+  secondaryContainer: '#201F25',
+  onSecondaryContainer: '#E8E3D8',
 
-  tertiary: '#E08E79',
-  onTertiary: '#121214',
-  tertiaryContainer: '#38221C',
-  onTertiaryContainer: '#FCEEE8',
+  tertiary: '#E28C77',
+  onTertiary: '#0E0E12',
+  tertiaryContainer: '#351F19',
+  onTertiaryContainer: '#FBECE5',
+
+  gold: '#D6AE60',
+  onGold: '#0E0E12',
+  goldContainer: '#302615',
 
   accent: '#E6C594',
-  onAccent: '#121214',
-  accentContainer: '#362B1C',
+  onAccent: '#0E0E12',
+  accentContainer: '#342918',
 
   error: '#E87A74',
-  errorContainer: '#451715',
+  errorContainer: '#401412',
   onErrorContainer: '#FCEBEA',
 
-  surface: '#111114',
-  onSurface: '#F5F2EB',
-  surfaceVariant: '#1E1E24',
-  onSurfaceVariant: '#969087',
+  surface: '#0E0E12',
+  onSurface: '#F6F3EC',
+  surfaceVariant: '#1B1A21',
+  onSurfaceVariant: '#989288',
 
-  surfaceContainerLowest: '#0A0A0D',
-  surfaceContainerLow: '#1A1A20',
-  surfaceContainer: '#1E1E26',
-  surfaceContainerHigh: '#262630',
-  surfaceContainerHighest: '#2F2F3B',
+  surfaceContainerLowest: '#070709',
+  surfaceContainerLow: '#17161C',
+  surfaceContainer: '#1C1B23',
+  surfaceContainerHigh: '#24232C',
+  surfaceContainerHighest: '#2D2C37',
 
-  cardBg: '#1A1A22',
-  imageBg: '#22222C',
+  cardBg: '#18171E',
+  imageBg: '#1F1E26',
 
-  outline: '#3D3C46',
-  outlineVariant: '#2A2933',
-  scrim: 'rgba(0, 0, 0, 0.7)',
-  glass: 'rgba(26, 26, 32, 0.8)',
+  outline: '#383742',
+  outlineVariant: '#26252F',
+  scrim: 'rgba(0, 0, 0, 0.72)',
+  glass: 'rgba(22, 21, 28, 0.85)',
 } as const;
 
 export type Palette = { [K in keyof typeof light]: string };
@@ -154,7 +162,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         if (saved === 'light' || saved === 'dark' || saved === 'system') {
           setModeState(saved);
         } else {
-          // Default to light mode for fresh airy aesthetic
           setModeState('light');
         }
       })

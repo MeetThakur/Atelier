@@ -24,13 +24,18 @@ export function EmptyState({ title, message, onAction, actionLabel, isFilterResu
 
   return (
     <View style={styles.wrap}>
-      <View style={styles.iconCircle}>
-        <Ionicons
-          name={isFilterResult ? 'filter-outline' : 'sparkles-outline'}
-          size={32}
-          color={c.onSurface}
-        />
+      {/* Studio Pedestal Frame */}
+      <View style={styles.pedestalFrame}>
+        <View style={styles.pedestalGlow} />
+        <View style={styles.iconCircle}>
+          <Ionicons
+            name={isFilterResult ? 'filter-outline' : 'shirt-outline'}
+            size={28}
+            color={c.gold}
+          />
+        </View>
       </View>
+
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.message}>{message}</Text>
 
@@ -51,26 +56,44 @@ const makeStyles = (c: Palette) =>
   StyleSheet.create({
     wrap: {
       alignItems: 'center',
-      paddingTop: 56,
+      paddingTop: 54,
       paddingBottom: 40,
-      paddingHorizontal: 36,
+      paddingHorizontal: 28,
+    },
+    pedestalFrame: {
+      position: 'relative',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 20,
+    },
+    pedestalGlow: {
+      position: 'absolute',
+      width: 104,
+      height: 104,
+      borderRadius: shapes.full,
+      backgroundColor: c.goldContainer,
+      opacity: 0.7,
     },
     iconCircle: {
-      width: 72,
-      height: 72,
+      width: 76,
+      height: 76,
       borderRadius: shapes.full,
-      backgroundColor: c.surfaceContainerLow,
-      borderWidth: 1,
+      backgroundColor: c.cardBg,
+      borderWidth: 1.5,
       borderColor: c.outlineVariant,
       alignItems: 'center',
       justifyContent: 'center',
-      marginBottom: 16,
+      shadowColor: '#000',
+      shadowOpacity: 0.06,
+      shadowRadius: 12,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: 2,
     },
     title: {
       fontFamily: fonts.displayBold,
       color: c.onSurface,
       fontSize: 22,
-      letterSpacing: -0.4,
+      letterSpacing: -0.3,
       marginBottom: 6,
       textAlign: 'center',
     },
@@ -80,22 +103,28 @@ const makeStyles = (c: Palette) =>
       color: c.onSurfaceVariant,
       fontSize: 14,
       lineHeight: 21,
-      maxWidth: 280,
+      maxWidth: 290,
     },
     actionButton: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 6,
       marginTop: 22,
-      paddingHorizontal: 20,
-      height: 42,
+      paddingHorizontal: 22,
+      height: 44,
       borderRadius: shapes.full,
       backgroundColor: c.primary,
+      shadowColor: '#000',
+      shadowOpacity: 0.12,
+      shadowRadius: 8,
+      shadowOffset: { width: 0, height: 2 },
+      elevation: 2,
     },
     actionButtonText: {
       fontFamily: fonts.bold,
       color: c.onPrimary,
       fontSize: 13.5,
+      letterSpacing: 0.2,
     },
     pressed: {
       opacity: 0.8,

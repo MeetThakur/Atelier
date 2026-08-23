@@ -43,6 +43,7 @@ export function CategoryChips({ value, onChange, counts }: Props) {
                 pressed && styles.pressed,
               ]}
             >
+              {isSelected && <View style={styles.activeDot} />}
               <Text
                 style={[
                   styles.chipText,
@@ -79,14 +80,14 @@ export function CategoryChips({ value, onChange, counts }: Props) {
 const makeStyles = (c: Palette) =>
   StyleSheet.create({
     container: {
-      paddingVertical: 6,
+      paddingVertical: 4,
     },
     row: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 8,
-      paddingVertical: 4,
-      paddingRight: 12,
+      paddingVertical: 6,
+      paddingRight: 14,
     },
     chip: {
       flexDirection: 'row',
@@ -94,16 +95,27 @@ const makeStyles = (c: Palette) =>
       height: 40,
       borderRadius: shapes.full,
       paddingHorizontal: 16,
-      gap: 8,
+      gap: 7,
       borderWidth: 1,
     },
     chipSelected: {
       backgroundColor: c.primary,
       borderColor: c.primary,
+      shadowColor: '#000',
+      shadowOpacity: 0.14,
+      shadowRadius: 8,
+      shadowOffset: { width: 0, height: 3 },
+      elevation: 3,
     },
     chipUnselected: {
-      backgroundColor: c.surfaceContainerLow,
+      backgroundColor: c.cardBg,
       borderColor: c.outlineVariant,
+    },
+    activeDot: {
+      width: 4,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: c.gold,
     },
     chipText: {
       fontSize: 13.5,
@@ -113,6 +125,7 @@ const makeStyles = (c: Palette) =>
     chipTextSelected: {
       fontFamily: fonts.bold,
       color: c.onPrimary,
+      letterSpacing: 0.2,
     },
     chipTextUnselected: {
       fontFamily: fonts.medium,
@@ -127,7 +140,7 @@ const makeStyles = (c: Palette) =>
       justifyContent: 'center',
     },
     countBadgeSelected: {
-      backgroundColor: c.onPrimary,
+      backgroundColor: 'rgba(255, 255, 255, 0.2)',
     },
     countBadgeUnselected: {
       backgroundColor: c.surfaceContainerHighest,
@@ -139,13 +152,13 @@ const makeStyles = (c: Palette) =>
       textAlignVertical: 'center',
     },
     countTextSelected: {
-      color: c.primary,
+      color: c.onPrimary,
     },
     countTextUnselected: {
       color: c.onSurfaceVariant,
     },
     pressed: {
-      opacity: 0.75,
+      opacity: 0.8,
       transform: [{ scale: 0.96 }],
     },
   });

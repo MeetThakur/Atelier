@@ -108,7 +108,9 @@ export const ItemCard = memo(function ItemCard({
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
     >
       <View style={[styles.imageWrap, !hasCustomName && !hasSeason && styles.imageWrapFull]}>
-        <Image source={{ uri: item.image }} style={styles.image} resizeMode="contain" />
+        <View style={styles.studioPedestal}>
+          <Image source={{ uri: item.image }} style={styles.image} resizeMode="contain" />
+        </View>
 
         {/* Double-tap Pop Animated Heart */}
         <Animated.View
@@ -125,10 +127,10 @@ export const ItemCard = memo(function ItemCard({
           <Ionicons name="heart" size={64} color="#E0534C" style={styles.heartForeground} />
         </Animated.View>
 
-        {/* Subtle corner favorite indicator when favorited */}
+        {/* Subtle frosted corner favorite dot when favorited */}
         {item.favorite && (
           <View style={styles.cornerFavoriteDot}>
-            <Ionicons name="heart" size={13} color="#E0534C" />
+            <Ionicons name="heart" size={12} color="#E0534C" />
           </View>
         )}
       </View>
@@ -149,7 +151,7 @@ export const ItemCard = memo(function ItemCard({
                 <Ionicons
                   name={SEASON_ICONS[item.season!] || 'sparkles-outline'}
                   size={11}
-                  color={c.onSurfaceVariant}
+                  color={c.gold}
                 />
                 <Text style={styles.seasonText}>{item.season}</Text>
               </View>
@@ -166,33 +168,43 @@ const makeStyles = (c: Palette) =>
     card: {
       width: '48.5%',
       backgroundColor: c.cardBg,
-      borderRadius: shapes.xl,
+      borderRadius: shapes.xxl,
       borderWidth: 1,
       borderColor: c.outlineVariant,
       overflow: 'hidden',
       marginBottom: 16,
       shadowColor: '#000',
-      shadowOpacity: 0.04,
-      shadowRadius: 8,
-      shadowOffset: { width: 0, height: 2 },
-      elevation: 1,
+      shadowOpacity: 0.05,
+      shadowRadius: 10,
+      shadowOffset: { width: 0, height: 3 },
+      elevation: 2,
     },
     cardPressed: {
       opacity: 0.9,
-      transform: [{ scale: 0.98 }],
+      transform: [{ scale: 0.97 }],
     },
     imageWrap: {
-      height: 200,
+      height: 205,
       width: '100%',
       backgroundColor: c.cardBg,
       position: 'relative',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: 8,
+      padding: 6,
     },
     imageWrapFull: {
-      height: 220,
-      padding: 10,
+      height: 225,
+      padding: 8,
+    },
+    studioPedestal: {
+      width: '100%',
+      height: '100%',
+      backgroundColor: c.imageBg,
+      borderRadius: shapes.lg,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 6,
+      overflow: 'hidden',
     },
     image: {
       width: '100%',
@@ -213,24 +225,24 @@ const makeStyles = (c: Palette) =>
     },
     cornerFavoriteDot: {
       position: 'absolute',
-      bottom: 8,
-      right: 8,
+      bottom: 12,
+      right: 12,
       width: 24,
       height: 24,
       borderRadius: 12,
-      backgroundColor: 'rgba(255, 255, 255, 0.92)',
+      backgroundColor: 'rgba(255, 255, 255, 0.95)',
       alignItems: 'center',
       justifyContent: 'center',
       shadowColor: '#000',
       shadowOpacity: 0.12,
-      shadowRadius: 3,
+      shadowRadius: 4,
       shadowOffset: { width: 0, height: 1 },
-      elevation: 2,
+      elevation: 3,
     },
     infoArea: {
-      paddingHorizontal: 12,
-      paddingTop: 6,
-      paddingBottom: 10,
+      paddingHorizontal: 14,
+      paddingTop: 4,
+      paddingBottom: 12,
     },
     nameRow: {
       flexDirection: 'row',
@@ -256,8 +268,9 @@ const makeStyles = (c: Palette) =>
       gap: 3.5,
     },
     seasonText: {
-      fontFamily: fonts.medium,
+      fontFamily: fonts.semiBold,
       color: c.onSurfaceVariant,
       fontSize: 10.5,
+      letterSpacing: 0.3,
     },
   });
