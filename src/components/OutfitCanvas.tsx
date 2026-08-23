@@ -54,37 +54,38 @@ function DraggablePiece({
   const pan = useRef(new Animated.ValueXY({ x: data.initialX, y: data.initialY })).current;
   const lastOffset = useRef({ x: data.initialX, y: data.initialY });
 
+  // Scale Animated Value
+  const scaleAnim = useRef(new Animated.Value(data.scale)).current;
+  const currentScaleRef = useRef<number>(data.scale);
+
+  useEffect(() => {
+    scaleAnim.setValue(data.scale);
+    currentScaleRef.current = data.scale;
+  }, [data.scale, scaleAnim]);
+
   // Two-finger pinch state tracking
   const initialPinchDistRef = useRef<number | null>(null);
-  const initialScaleRef = useRef<number>(data.scale);
+  const pinchStartScaleRef = useRef<number>(data.scale);
   const isPinchingRef = useRef<boolean>(false);
+  const touchStartTimeRef = useRef<number>(0);
 
-  const panResponder = useRef(
+  const mainPanResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => false,
-      onStartShouldSetPanResponderCapture: () => false,
-      onMoveShouldSetPanResponder: (evt, gestureState) => {
-        const touches = evt.nativeEvent.touches;
-        if (touches && touches.length >= 2) return true;
-        return Math.abs(gestureState.dx) > 3 || Math.abs(gestureState.dy) > 3;
-      },
-      onMoveShouldSetPanResponderCapture: (evt, gestureState) => {
-        const touches = evt.nativeEvent.touches;
-        if (touches && touches.length >= 2) return true;
-        return Math.abs(gestureState.dx) > 3 || Math.abs(gestureState.dy) > 3;
-      },
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
       onPanResponderGrant: (evt) => {
-        const touches = evt.nativeEvent.touches;
+        touchStartTimeRef.current = Date.now();
         onSelect();
 
+        const touches = evt.nativeEvent.touches;
         if (touches && touches.length >= 2) {
           isPinchingRef.current = true;
           const dist = Math.hypot(
             touches[0].pageX - touches[1].pageX,
             touches[0].pageY - touches[1].pageY
           );
-          initialPinchDistRef.current = dist > 0 ? dist : 1;
-          initialScaleRef.current = data.scale;
+          initialPinchDistRef.current = Math.max(dist, 1);
+          pinchStartScaleRef.current = currentScaleRef.current;
         } else {
           isPinchingRef.current = false;
           initialPinchDistRef.current = null;
@@ -99,64 +100,97 @@ function DraggablePiece({
         const touches = evt.nativeEvent.touches;
 
         if (touches && touches.length >= 2) {
-          // Two-finger Pinch to Enlarge / Scale!
+          // Two-finger Pinch to Enlarge / Scale
           const currentDist = Math.hypot(
             touches[0].pageX - touches[1].pageX,
             touches[0].pageY - touches[1].pageY
           );
 
-          if (initialPinchDistRef.current && initialPinchDistRef.current > 0) {
+          if (!initialPinchDistRef.current) {
+            initialPinchDistRef.current = Math.max(currentDist, 1);
+            pinchStartScaleRef.current = currentScaleRef.current;
+          } else {
             const factor = currentDist / initialPinchDistRef.current;
-            const targetScale = Math.min(
-              Math.max(initialScaleRef.current * factor, 0.45),
-              2.6
-            );
-            onUpdateScale(targetScale);
+            const newScale = Math.min(Math.max(pinchStartScaleRef.current * factor, 0.45), 2.8);
+            scaleAnim.setValue(newScale);
+            currentScaleRef.current = newScale;
           }
         } else if (!isPinchingRef.current) {
-          // Single-finger Pan to Drag
+          // Single-finger Translation
           pan.setValue({ x: gestureState.dx, y: gestureState.dy });
         }
       },
       onPanResponderRelease: (_, gestureState) => {
-        if (!isPinchingRef.current) {
+        const duration = Date.now() - touchStartTimeRef.current;
+        const isTap = Math.abs(gestureState.dx) < 4 && Math.abs(gestureState.dy) < 4 && duration < 280;
+
+        if (isTap) {
+          void Haptics.selectionAsync();
+          onSelect();
+        }
+
+        if (isPinchingRef.current) {
+          onUpdateScale(currentScaleRef.current);
+          isPinchingRef.current = false;
+          initialPinchDistRef.current = null;
+        } else {
           pan.flattenOffset();
           lastOffset.current = {
             x: lastOffset.current.x + gestureState.dx,
             y: lastOffset.current.y + gestureState.dy,
           };
         }
-        isPinchingRef.current = false;
-        initialPinchDistRef.current = null;
       },
     })
   ).current;
 
-  const baseSize = 145 * data.scale;
+  // Corner Drag-to-Resize Responder
+  const startDragScaleRef = useRef(1);
+  const cornerResizeResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {
+        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        startDragScaleRef.current = currentScaleRef.current;
+      },
+      onPanResponderMove: (_, gestureState) => {
+        const delta = (gestureState.dx + gestureState.dy) / 160;
+        const newScale = Math.min(Math.max(startDragScaleRef.current + delta, 0.45), 2.8);
+        scaleAnim.setValue(newScale);
+        currentScaleRef.current = newScale;
+      },
+      onPanResponderRelease: () => {
+        onUpdateScale(currentScaleRef.current);
+      },
+    })
+  ).current;
+
+  const baseWidth = 145;
+  const baseHeight = 180;
 
   return (
     <Animated.View
       style={[
+        styles.pieceContainer,
         {
-          position: 'absolute',
-          transform: [{ translateX: pan.x }, { translateY: pan.y }],
+          transform: [
+            { translateX: pan.x },
+            { translateY: pan.y },
+            { scale: scaleAnim },
+          ],
           zIndex: data.zIndex,
         },
       ]}
-      {...panResponder.panHandlers}
+      {...mainPanResponder.panHandlers}
     >
-      <Pressable
-        onPress={() => {
-          void Haptics.selectionAsync();
-          onSelect();
-        }}
+      <View
         style={[
           styles.pieceFrame,
           {
-            width: baseSize,
-            height: baseSize * 1.25,
+            width: baseWidth,
+            height: baseHeight,
             borderColor: isSelected ? palette.gold : 'transparent',
-            backgroundColor: 'transparent',
           },
         ]}
       >
@@ -166,35 +200,44 @@ function DraggablePiece({
           resizeMode="contain"
         />
 
-        {/* Selected Controls Header Bar */}
+        {/* Selected Controls */}
         {isSelected && (
-          <View style={styles.floatingControlsWrap} pointerEvents="box-none">
-            <Pressable
-              onPress={(e) => {
-                e.stopPropagation();
-                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                onBringToFront();
-              }}
-              hitSlop={10}
-              style={[styles.miniControlBtn, { backgroundColor: palette.primary }]}
-            >
-              <Ionicons name="arrow-up" size={11} color={palette.onPrimary} />
-            </Pressable>
+          <>
+            {/* Top Action Buttons */}
+            <View style={styles.floatingControlsWrap} pointerEvents="box-none">
+              <Pressable
+                onPress={() => {
+                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  onBringToFront();
+                }}
+                hitSlop={10}
+                style={[styles.miniControlBtn, { backgroundColor: palette.primary }]}
+              >
+                <Ionicons name="arrow-up" size={11} color={palette.onPrimary} />
+              </Pressable>
 
-            <Pressable
-              onPress={(e) => {
-                e.stopPropagation();
-                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                onRemove();
-              }}
-              hitSlop={10}
-              style={[styles.miniControlBtn, { backgroundColor: palette.error }]}
+              <Pressable
+                onPress={() => {
+                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  onRemove();
+                }}
+                hitSlop={10}
+                style={[styles.miniControlBtn, { backgroundColor: palette.error }]}
+              >
+                <Ionicons name="close" size={11} color="#FFFFFF" />
+              </Pressable>
+            </View>
+
+            {/* Corner Resize Handle */}
+            <View
+              style={[styles.cornerHandle, { backgroundColor: palette.gold }]}
+              {...cornerResizeResponder.panHandlers}
             >
-              <Ionicons name="close" size={11} color="#FFFFFF" />
-            </Pressable>
-          </View>
+              <Ionicons name="resize" size={10} color="#FFFFFF" />
+            </View>
+          </>
         )}
-      </Pressable>
+      </View>
     </Animated.View>
   );
 }
@@ -414,7 +457,7 @@ export function OutfitCanvas({ items }: Props) {
         <View style={styles.toolbarLeft}>
           <Text style={styles.canvasTitle}>Studio Canvas</Text>
           <Text style={styles.canvasSubtitle}>
-            Pinch with two fingers to enlarge
+            Pinch to resize or drag corner
           </Text>
         </View>
 
@@ -479,7 +522,7 @@ export function OutfitCanvas({ items }: Props) {
             </View>
             <Text style={styles.hintTitle}>Interactive Lookbook Studio</Text>
             <Text style={styles.hintText}>
-              Tap pieces below to add cutouts. Drag to position, and pinch with two fingers to enlarge.
+              Tap pieces below to add cutouts. Drag anywhere, pinch with two fingers or pull the corner handle to resize.
             </Text>
           </View>
         ) : (
@@ -661,6 +704,9 @@ export function OutfitCanvas({ items }: Props) {
 }
 
 const styles = StyleSheet.create({
+  pieceContainer: {
+    position: 'absolute',
+  },
   pieceFrame: {
     borderRadius: shapes.lg,
     borderWidth: 1.5,
@@ -669,6 +715,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 4,
     position: 'relative',
+    backgroundColor: 'transparent',
   },
   pieceImage: {
     width: '100%',
@@ -694,6 +741,20 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 },
     elevation: 5,
+  },
+  cornerHandle: {
+    position: 'absolute',
+    bottom: -8,
+    right: -8,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 3,
+    elevation: 6,
   },
 });
 
