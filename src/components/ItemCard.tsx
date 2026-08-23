@@ -100,7 +100,7 @@ export const ItemCard = memo(function ItemCard({
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
     >
       <View style={styles.imageWrap}>
-        <Image source={{ uri: item.image }} style={styles.image} resizeMode="cover" />
+        <Image source={{ uri: item.image }} style={styles.image} resizeMode="contain" />
 
         {/* Double-tap Pop Animated Heart */}
         <Animated.View
@@ -166,12 +166,13 @@ const makeStyles = (c: Palette) =>
       transform: [{ scale: 0.98 }],
     },
     imageWrap: {
-      height: 215,
+      height: 220,
       width: '100%',
       backgroundColor: c.cardBg,
       position: 'relative',
       alignItems: 'center',
       justifyContent: 'center',
+      padding: 6,
     },
     image: {
       width: '100%',

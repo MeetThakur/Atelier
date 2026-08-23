@@ -85,7 +85,7 @@ export function ItemActionSheet({
 
           {/* Piece Header Preview */}
           <View style={styles.previewRow}>
-            <Image source={{ uri: item.image }} style={styles.thumb} />
+            <Image source={{ uri: item.image }} style={styles.thumb} resizeMode="contain" />
             <View style={styles.previewInfo}>
               <Text style={styles.pieceName} numberOfLines={1}>
                 {displayName}

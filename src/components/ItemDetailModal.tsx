@@ -105,7 +105,7 @@ export function ItemDetailModal({
           <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
             {/* Hero Image */}
             <View style={styles.heroImageWrap}>
-              <Image source={{ uri: item.image }} style={styles.heroImage} resizeMode="cover" />
+              <Image source={{ uri: item.image }} style={styles.heroImage} resizeMode="contain" />
             </View>
 
             {/* Information Section */}
@@ -220,6 +220,9 @@ const makeStyles = (c: Palette) =>
       width: '100%',
       height: 380,
       backgroundColor: c.cardBg,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 12,
     },
     heroImage: {
       width: '100%',
