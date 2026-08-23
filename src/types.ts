@@ -3,7 +3,7 @@ export type ClothingCategory = Exclude<Category, 'All'>;
 
 export type Season = 'All-Season' | 'Spring' | 'Summer' | 'Fall' | 'Winter';
 
-export type SortMode = 'newest' | 'favorites' | 'name';
+export type SortMode = 'newest' | 'favorites' | 'name' | 'random';
 
 export type AppTab = 'archive' | 'canvas' | 'stats';
 

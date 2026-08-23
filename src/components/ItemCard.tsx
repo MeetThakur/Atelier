@@ -2,7 +2,7 @@ import { memo, useRef } from 'react';
 import { Animated, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import type { Item } from '../types';
+import type { ClothingCategory, Item } from '../types';
 import { useTheme, fonts, shapes, type Palette } from '../theme';
 
 type Props = {
@@ -10,6 +10,16 @@ type Props = {
   onPress: () => void;
   onOpenMenu: () => void;
   onToggleFavorite: (id: string) => void;
+  aspectRatio?: number;
+};
+
+// Haute editorial category-informed pedestal ratios
+const CATEGORY_ASPECT_RATIOS: Record<ClothingCategory, number> = {
+  Dresses: 3 / 4.7,
+  Bottoms: 3 / 4.3,
+  Tops: 3 / 3.9,
+  Shoes: 3 / 3.4,
+  Accessories: 1 / 1.05,
 };
 
 export const ItemCard = memo(function ItemCard({
@@ -17,6 +27,7 @@ export const ItemCard = memo(function ItemCard({
   onPress,
   onOpenMenu,
   onToggleFavorite,
+  aspectRatio,
 }: Props) {
   const c = useTheme();
   const styles = makeStyles(c);
@@ -78,6 +89,9 @@ export const ItemCard = memo(function ItemCard({
   const displayName = item.name && item.name !== 'Piece' ? item.name : item.category;
   const subInfo = `${item.category}  •  ${item.season && item.season !== 'All-Season' ? item.season : 'All-Season'}`;
 
+  const resolvedAspectRatio =
+    aspectRatio || CATEGORY_ASPECT_RATIOS[item.category] || 3 / 4.1;
+
   return (
     <Pressable
       onPress={handleCardPress}
@@ -85,7 +99,7 @@ export const ItemCard = memo(function ItemCard({
       delayLongPress={350}
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
     >
-      <View style={styles.imagePedestal}>
+      <View style={[styles.imagePedestal, { aspectRatio: resolvedAspectRatio }]}>
         <Image source={{ uri: item.image }} style={styles.image} resizeMode="contain" />
 
         {/* Double-tap Pop Animated Heart */}
@@ -116,7 +130,7 @@ export const ItemCard = memo(function ItemCard({
         >
           <Ionicons
             name={item.favorite ? 'heart' : 'heart-outline'}
-            size={16}
+            size={15}
             color={item.favorite ? '#E0534C' : c.onSurface}
           />
         </Pressable>
@@ -138,13 +152,12 @@ export const ItemCard = memo(function ItemCard({
 const makeStyles = (c: Palette) =>
   StyleSheet.create({
     card: {
-      width: '48.5%',
+      width: '100%',
       backgroundColor: c.cardBg,
       borderRadius: 20,
       borderWidth: 1,
       borderColor: c.outlineVariant,
       overflow: 'hidden',
-      marginBottom: 14,
       padding: 6,
       shadowColor: '#000',
       shadowOpacity: 0.04,
@@ -158,7 +171,6 @@ const makeStyles = (c: Palette) =>
     },
     imagePedestal: {
       width: '100%',
-      aspectRatio: 3 / 4.1,
       backgroundColor: c.imageBg,
       borderRadius: 16,
       alignItems: 'center',
@@ -207,7 +219,7 @@ const makeStyles = (c: Palette) =>
     name: {
       fontFamily: fonts.bold,
       color: c.onSurface,
-      fontSize: 14,
+      fontSize: 13.5,
       letterSpacing: -0.1,
       marginBottom: 2,
     },

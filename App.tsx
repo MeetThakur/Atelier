@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Animated, FlatList, Image, Modal, Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { Animated, Modal, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
 import {
@@ -40,10 +40,25 @@ import * as Haptics from 'expo-haptics';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
+function seededShuffle<T>(arr: T[], seed: number): T[] {
+  const copy = [...arr];
+  let s = (seed + 1) * 12345;
+  for (let i = copy.length - 1; i > 0; i--) {
+    s = (s * 9301 + 49297) % 233280;
+    const rnd = s / 233280;
+    const j = Math.floor(rnd * (i + 1));
+    const temp = copy[i];
+    copy[i] = copy[j];
+    copy[j] = temp;
+  }
+  return copy;
+}
+
 const SORT_OPTIONS: { id: SortMode; label: string; description: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { id: 'newest', label: 'Recently added', description: 'Most recently photographed pieces first', icon: 'time-outline' },
   { id: 'favorites', label: 'Favorites first', description: 'Your favorited wardrobe staples first', icon: 'heart-outline' },
   { id: 'name', label: 'Alphabetical (A to Z)', description: 'Sorted alphabetically by piece name', icon: 'text-outline' },
+  { id: 'random', label: 'Random Shuffle', description: 'Surprise daily styling rotation', icon: 'shuffle-outline' },
 ];
 
 function AtelierApp() {
@@ -72,6 +87,7 @@ function AtelierApp() {
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
   const [actionSheetItem, setActionSheetItem] = useState<Item | null>(null);
   const [sortMode, setSortMode] = useState<SortMode>('newest');
+  const [randomSeed, setRandomSeed] = useState(0);
 
   // Smooth 150ms native tab crossfade
   const tabFadeAnim = useRef(new Animated.Value(1)).current;
@@ -129,10 +145,26 @@ function AtelierApp() {
       list = [...list].sort((a, b) => (b.favorite ? 1 : 0) - (a.favorite ? 1 : 0));
     } else if (sortMode === 'name') {
       list = [...list].sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sortMode === 'random') {
+      list = seededShuffle(list, randomSeed);
     }
 
     return list;
-  }, [items, category, season, query, sortMode]);
+  }, [items, category, season, query, sortMode, randomSeed]);
+
+  // 2-Column Masonry split for organic staggered flow
+  const { leftColumn, rightColumn } = useMemo(() => {
+    const left: Item[] = [];
+    const right: Item[] = [];
+    visibleItems.forEach((item, index) => {
+      if (index % 2 === 0) {
+        left.push(item);
+      } else {
+        right.push(item);
+      }
+    });
+    return { leftColumn: left, rightColumn: right };
+  }, [visibleItems]);
 
   // Keep modals updated if favorited state changes
   const currentSelectedItem = useMemo(() => {
@@ -159,7 +191,9 @@ function AtelierApp() {
       ? 'Recently added'
       : sortMode === 'favorites'
       ? 'Favorites first'
-      : 'Alphabetical';
+      : sortMode === 'name'
+      ? 'Alphabetical'
+      : 'Random Shuffle';
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
@@ -176,98 +210,94 @@ function AtelierApp() {
               </View>
             )}
 
-            <Header
-              greeting={greeting()}
-              totalPieces={loaded ? items.length : null}
-              searchActive={searchOpen}
-              onToggleSearch={() => {
-                setSearchOpen((open) => {
-                  if (open) setQuery('');
-                  return !open;
-                });
-              }}
-            />
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.scrollContent}
+            >
+              <Header
+                greeting={greeting()}
+                totalPieces={loaded ? items.length : null}
+                searchActive={searchOpen}
+                onToggleSearch={() => {
+                  setSearchOpen((open) => {
+                    if (open) setQuery('');
+                    return !open;
+                  });
+                }}
+              />
 
-            {searchOpen && <SearchBar value={query} onChange={setQuery} />}
+              {searchOpen && <SearchBar value={query} onChange={setQuery} />}
 
-            <CategoryChips
-              value={category}
-              onChange={setCategory}
-              counts={loaded ? categoryCounts : undefined}
-            />
+              <CategoryChips
+                value={category}
+                onChange={setCategory}
+                counts={loaded ? categoryCounts : undefined}
+              />
 
-            {/* Active Sub-Filter Badges (compact) */}
-            {activeFilterCount > 0 && season !== 'All' && (
-              <View style={styles.activeFiltersRow}>
+              {/* Active Sub-Filter Badges (compact) */}
+              {activeFilterCount > 0 && season !== 'All' && (
+                <View style={styles.activeFiltersRow}>
+                  <Pressable
+                    onPress={() => setSeason('All')}
+                    style={styles.activeFilterPill}
+                  >
+                    <Ionicons
+                      name={SEASON_ICONS[season] || 'sparkles-outline'}
+                      size={12}
+                      color={c.gold}
+                    />
+                    <Text style={styles.activeFilterText}>Season: {season}</Text>
+                    <Ionicons name="close-circle" size={13} color={c.onPrimaryContainer} />
+                  </Pressable>
+
+                  <Pressable onPress={() => setSeason('All')} style={styles.clearFiltersBtn}>
+                    <Text style={styles.clearFiltersText}>Reset</Text>
+                  </Pressable>
+                </View>
+              )}
+
+              {/* Studio Spotlight Hero Banner */}
+              {!hasActiveFilters && items.length > 0 && (
+                <View style={styles.spotlightHero}>
+                  <View style={styles.spotlightLeft}>
+                    <View style={styles.spotlightTag}>
+                      <Ionicons name="sparkles" size={11} color={c.gold} />
+                      <Text style={styles.spotlightTagText}>STUDIO</Text>
+                    </View>
+                    <Text style={styles.spotlightTitle}>Style Today's Look</Text>
+                    <Text style={styles.spotlightSubtitle}>
+                      Mix and match {items.length} pieces on the styling canvas.
+                    </Text>
+                  </View>
+
+                  <Pressable
+                    onPress={() => handleTabChange('canvas')}
+                    style={({ pressed }) => [styles.spotlightActionBtn, pressed && styles.pressed]}
+                  >
+                    <Ionicons name="sparkles" size={13} color={c.onPrimary} />
+                    <Text style={styles.spotlightActionText}>Try Studio</Text>
+                  </Pressable>
+                </View>
+              )}
+
+              {/* Section Header: "Your Archive" + Sort Dropdown */}
+              <View style={styles.sectionHeaderRow}>
+                <Text style={styles.sectionTitle}>Your Archive</Text>
+
                 <Pressable
-                  onPress={() => setSeason('All')}
-                  style={styles.activeFilterPill}
+                  onPress={() => {
+                    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setSortModalOpen(true);
+                  }}
+                  style={({ pressed }) => [styles.sortDropdownBtn, pressed && styles.pressed]}
                 >
-                  <Ionicons
-                    name={SEASON_ICONS[season] || 'sparkles-outline'}
-                    size={12}
-                    color={c.gold}
-                  />
-                  <Text style={styles.activeFilterText}>Season: {season}</Text>
-                  <Ionicons name="close-circle" size={13} color={c.onPrimaryContainer} />
-                </Pressable>
-
-                <Pressable onPress={() => setSeason('All')} style={styles.clearFiltersBtn}>
-                  <Text style={styles.clearFiltersText}>Reset</Text>
+                  <Text style={styles.sortDropdownText}>{currentSortLabel}</Text>
+                  <Ionicons name="chevron-down" size={13} color={c.onSurfaceVariant} />
                 </Pressable>
               </View>
-            )}
 
-            <FlatList
-              data={visibleItems}
-              numColumns={2}
-              keyExtractor={(item) => item.id}
-              columnWrapperStyle={styles.gridRow}
-              contentContainerStyle={styles.grid}
-              showsVerticalScrollIndicator={false}
-              ListHeaderComponent={
-                <>
-                  {!hasActiveFilters && items.length > 0 && (
-                    <View style={styles.spotlightHero}>
-                      <View style={styles.spotlightLeft}>
-                        <View style={styles.spotlightTag}>
-                          <Ionicons name="sparkles" size={11} color={c.gold} />
-                          <Text style={styles.spotlightTagText}>STUDIO</Text>
-                        </View>
-                        <Text style={styles.spotlightTitle}>Style Today's Look</Text>
-                        <Text style={styles.spotlightSubtitle}>
-                          Mix and match {items.length} pieces on the styling canvas.
-                        </Text>
-                      </View>
-
-                      <Pressable
-                        onPress={() => handleTabChange('canvas')}
-                        style={({ pressed }) => [styles.spotlightActionBtn, pressed && styles.pressed]}
-                      >
-                        <Ionicons name="sparkles" size={13} color={c.onPrimary} />
-                        <Text style={styles.spotlightActionText}>Try Studio</Text>
-                      </Pressable>
-                    </View>
-                  )}
-
-                  {/* Section Header: "Your Archive" + Sort Dropdown */}
-                  <View style={styles.sectionHeaderRow}>
-                    <Text style={styles.sectionTitle}>Your Archive</Text>
-
-                    <Pressable
-                      onPress={() => {
-                        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        setSortModalOpen(true);
-                      }}
-                      style={({ pressed }) => [styles.sortDropdownBtn, pressed && styles.pressed]}
-                    >
-                      <Text style={styles.sortDropdownText}>{currentSortLabel}</Text>
-                      <Ionicons name="chevron-down" size={13} color={c.onSurfaceVariant} />
-                    </Pressable>
-                  </View>
-                </>
-              }
-              ListEmptyComponent={
+              {/* Masonry 2-Column Grid / Empty State */}
+              {visibleItems.length === 0 ? (
                 hasActiveFilters ? (
                   <EmptyState
                     title="No pieces found"
@@ -284,16 +314,34 @@ function AtelierApp() {
                     actionLabel="Add piece"
                   />
                 )
-              }
-              renderItem={({ item }) => (
-                <ItemCard
-                  item={item}
-                  onPress={() => setSelectedItem(item)}
-                  onOpenMenu={() => setActionSheetItem(item)}
-                  onToggleFavorite={toggleFavorite}
-                />
+              ) : (
+                <View style={styles.masonryContainer}>
+                  <View style={styles.masonryCol}>
+                    {leftColumn.map((item) => (
+                      <ItemCard
+                        key={item.id}
+                        item={item}
+                        onPress={() => setSelectedItem(item)}
+                        onOpenMenu={() => setActionSheetItem(item)}
+                        onToggleFavorite={toggleFavorite}
+                      />
+                    ))}
+                  </View>
+
+                  <View style={styles.masonryCol}>
+                    {rightColumn.map((item) => (
+                      <ItemCard
+                        key={item.id}
+                        item={item}
+                        onPress={() => setSelectedItem(item)}
+                        onOpenMenu={() => setActionSheetItem(item)}
+                        onToggleFavorite={toggleFavorite}
+                      />
+                    ))}
+                  </View>
+                </View>
               )}
-            />
+            </ScrollView>
 
             <Fab onPress={() => setModalOpen(true)} />
           </View>
@@ -343,6 +391,9 @@ function AtelierApp() {
                     key={opt.id}
                     onPress={() => {
                       void Haptics.selectionAsync();
+                      if (opt.id === 'random') {
+                        setRandomSeed((s) => s + 1);
+                      }
                       setSortMode(opt.id);
                       setSortModalOpen(false);
                     }}
@@ -457,6 +508,9 @@ const makeStyles = (c: Palette) =>
       flex: 1,
       paddingHorizontal: 16,
     },
+    scrollContent: {
+      paddingBottom: 110,
+    },
     errorBanner: {
       backgroundColor: c.errorContainer,
       borderRadius: shapes.md,
@@ -471,18 +525,21 @@ const makeStyles = (c: Palette) =>
       fontSize: 12,
       textAlign: 'center',
     },
-    gridRow: {
-      justifyContent: 'space-between',
+    masonryContainer: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 12,
     },
-    grid: {
-      paddingBottom: 110,
+    masonryCol: {
+      flex: 1,
+      gap: 14,
     },
     activeFiltersRow: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 8,
-      paddingTop: 6,
-      paddingBottom: 2,
+      paddingTop: 4,
+      paddingBottom: 4,
     },
     activeFilterPill: {
       flexDirection: 'row',
@@ -513,10 +570,11 @@ const makeStyles = (c: Palette) =>
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: c.surfaceContainerLow,
-      borderRadius: 24,
-      padding: 18,
+      borderRadius: 22,
+      paddingHorizontal: 18,
+      paddingVertical: 16,
       marginTop: 6,
-      marginBottom: 18,
+      marginBottom: 16,
       borderWidth: 1,
       borderColor: c.outlineVariant,
       position: 'relative',
@@ -524,7 +582,7 @@ const makeStyles = (c: Palette) =>
     },
     spotlightLeft: {
       flex: 1,
-      paddingRight: 8,
+      paddingRight: 10,
     },
     spotlightTag: {
       flexDirection: 'row',
@@ -550,22 +608,6 @@ const makeStyles = (c: Palette) =>
       color: c.onSurfaceVariant,
       fontSize: 12,
       lineHeight: 17,
-    },
-    collageCircle: {
-      width: 72,
-      height: 72,
-      borderRadius: 36,
-      backgroundColor: c.imageBg,
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: 6,
-      marginRight: 12,
-      borderWidth: 1,
-      borderColor: c.outlineVariant,
-    },
-    collageImg: {
-      width: '100%',
-      height: '100%',
     },
     spotlightActionBtn: {
       flexDirection: 'row',

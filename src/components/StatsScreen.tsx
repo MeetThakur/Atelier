@@ -1,10 +1,21 @@
-import React, { useEffect, useState } from 'react';
-import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  Image,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { ClothingCategory, Item, SavedOutfit, Season } from '../types';
-import { OUTFITS_STORAGE_KEY, SEASON_ICONS, clothingCategories, seasons } from '../constants';
+import { OUTFITS_STORAGE_KEY, SEASON_ICONS, clothingCategories, categories } from '../constants';
 import { useTheme, fonts, shapes, type Palette } from '../theme';
+
+const DAILY_LOGS_STORAGE_KEY = '@atelier_daily_outfit_logs_v1';
 
 const CATEGORY_ICONS: Record<ClothingCategory, keyof typeof Ionicons.glyphMap> = {
   Tops: 'shirt-outline',
@@ -14,22 +25,67 @@ const CATEGORY_ICONS: Record<ClothingCategory, keyof typeof Ionicons.glyphMap> =
   Accessories: 'glasses-outline',
 };
 
+const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
+type DailyLogEntry = {
+  dateKey: string; // 'YYYY-MM-DD'
+  pieceIds: string[];
+  outfitName?: string;
+};
+
 type Props = {
   items: Item[];
 };
+
+function formatDateKey(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function formatPrettyDate(dateKey: string): string {
+  const [y, m, d] = dateKey.split('-').map(Number);
+  const dateObj = new Date(y, m - 1, d);
+  return dateObj.toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
+function formatMonthHeader(d: Date): string {
+  return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+}
 
 export function StatsScreen({ items }: Props) {
   const c = useTheme();
   const styles = makeStyles(c);
 
-  const [savedOutfitsCount, setSavedOutfitsCount] = useState(0);
+  const [savedOutfits, setSavedOutfits] = useState<SavedOutfit[]>([]);
+  const [dailyLogs, setDailyLogs] = useState<Record<string, DailyLogEntry>>({});
+  const [viewDate, setViewDate] = useState(() => new Date());
+  const [selectedDateKey, setSelectedDateKey] = useState(() => formatDateKey(new Date()));
+  const [logModalOpen, setLogModalOpen] = useState(false);
+  const [modalCategory, setModalCategory] = useState<string>('All');
+  const [selectedPieceIds, setSelectedPieceIds] = useState<string[]>([]);
 
+  // Load saved outfits & daily logs on mount
   useEffect(() => {
     AsyncStorage.getItem(OUTFITS_STORAGE_KEY)
       .then((data) => {
         if (data) {
           const parsed: SavedOutfit[] = JSON.parse(data);
-          setSavedOutfitsCount(parsed.length);
+          setSavedOutfits(parsed);
+        }
+      })
+      .catch(() => {});
+
+    AsyncStorage.getItem(DAILY_LOGS_STORAGE_KEY)
+      .then((data) => {
+        if (data) {
+          const parsed: Record<string, DailyLogEntry> = JSON.parse(data);
+          setDailyLogs(parsed);
         }
       })
       .catch(() => {});
@@ -79,7 +135,6 @@ export function StatsScreen({ items }: Props) {
 
   const unwornCount = items.filter((i) => !i.wearCount || i.wearCount === 0).length;
 
-  // Potential Outfit Combinations
   const topsCount = categoryCounts.Tops;
   const bottomsCount = categoryCounts.Bottoms;
   const shoesCount = categoryCounts.Shoes;
@@ -88,7 +143,7 @@ export function StatsScreen({ items }: Props) {
   const potentialLooks =
     topsCount * bottomsCount * (shoesCount || 1) + dressesCount * (shoesCount || 1);
 
-  // Dynamic Stylist Insight (adding qualitative context rather than repeating raw counts)
+  // Dynamic Stylist Insight
   let insightHeadline = 'Wardrobe in Inception';
   let insightBody =
     'Photograph tops, trousers, and shoes to uncover your personal archive balance and unlock pairing suggestions.';
@@ -115,6 +170,98 @@ export function StatsScreen({ items }: Props) {
     }
   }
 
+  // Calendar calculations
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+  const todayKey = formatDateKey(new Date());
+
+  const daysInMonth = useMemo(() => {
+    const totalDays = new Date(year, month + 1, 0).getDate();
+    // Monday-based week index (0 = Monday, 6 = Sunday)
+    const firstDayIndex = (new Date(year, month, 1).getDay() + 6) % 7;
+    const days: { dateKey: string; dayNum: number; isCurrentMonth: boolean }[] = [];
+
+    // Empty lead days from previous month
+    for (let i = 0; i < firstDayIndex; i++) {
+      days.push({ dateKey: `pad-${i}`, dayNum: 0, isCurrentMonth: false });
+    }
+
+    // Days in current month
+    for (let d = 1; d <= totalDays; d++) {
+      const key = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      days.push({ dateKey: key, dayNum: d, isCurrentMonth: true });
+    }
+
+    return days;
+  }, [year, month]);
+
+  const handlePrevMonth = () => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setViewDate((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+  };
+
+  const handleNextMonth = () => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setViewDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+  };
+
+  const handleGoToToday = () => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const now = new Date();
+    setViewDate(new Date(now.getFullYear(), now.getMonth(), 1));
+    setSelectedDateKey(formatDateKey(now));
+  };
+
+  const selectedLog = dailyLogs[selectedDateKey];
+  const selectedLoggedPieces = useMemo(() => {
+    if (!selectedLog || !selectedLog.pieceIds) return [];
+    return selectedLog.pieceIds
+      .map((id) => items.find((i) => i.id === id))
+      .filter((i): i is Item => Boolean(i));
+  }, [selectedLog, items]);
+
+  const handleOpenLogModal = () => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSelectedPieceIds(selectedLog?.pieceIds || []);
+    setLogModalOpen(true);
+  };
+
+  const handleTogglePieceSelect = (pieceId: string) => {
+    void Haptics.selectionAsync();
+    setSelectedPieceIds((prev) =>
+      prev.includes(pieceId) ? prev.filter((id) => id !== pieceId) : [...prev, pieceId]
+    );
+  };
+
+  const handleSaveDailyLog = async () => {
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    const updated = { ...dailyLogs };
+    if (selectedPieceIds.length > 0) {
+      updated[selectedDateKey] = {
+        dateKey: selectedDateKey,
+        pieceIds: selectedPieceIds,
+      };
+    } else {
+      delete updated[selectedDateKey];
+    }
+
+    setDailyLogs(updated);
+    setLogModalOpen(false);
+    await AsyncStorage.setItem(DAILY_LOGS_STORAGE_KEY, JSON.stringify(updated)).catch(() => {});
+  };
+
+  const handleRemoveLog = async () => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const updated = { ...dailyLogs };
+    delete updated[selectedDateKey];
+    setDailyLogs(updated);
+    await AsyncStorage.setItem(DAILY_LOGS_STORAGE_KEY, JSON.stringify(updated)).catch(() => {});
+  };
+
+  const filteredModalItems = items.filter(
+    (item) => modalCategory === 'All' || item.category === modalCategory
+  );
+
   return (
     <ScrollView
       style={styles.container}
@@ -124,11 +271,169 @@ export function StatsScreen({ items }: Props) {
       {/* Editorial Header */}
       <View style={styles.header}>
         <View style={styles.kickerRow}>
-          <Text style={styles.kicker}>ANALYTICS & CURATION</Text>
+          <Text style={styles.kicker}>LOOKBOOK CALENDAR & METRICS</Text>
           <View style={styles.kickerDot} />
-          <Text style={styles.kickerSub}>ATELIER INSIGHTS</Text>
+          <Text style={styles.kickerSub}>ARCHIVE JOURNAL</Text>
         </View>
-        <Text style={styles.title}>Wardrobe Stats</Text>
+        <Text style={styles.title}>Wardrobe Journal</Text>
+      </View>
+
+      {/* --- Haute Editorial Daily Outfit Calendar --- */}
+      <View style={styles.calendarCard}>
+        {/* Calendar Month Header */}
+        <View style={styles.calendarHeaderRow}>
+          <View style={styles.monthTitleWrap}>
+            <Text style={styles.monthTitleText}>{formatMonthHeader(viewDate)}</Text>
+          </View>
+
+          <View style={styles.calendarNavActions}>
+            <Pressable
+              onPress={handleGoToToday}
+              hitSlop={4}
+              style={({ pressed }) => [styles.todayBtn, pressed && styles.pressed]}
+            >
+              <Text style={styles.todayBtnText}>Today</Text>
+            </Pressable>
+
+            <Pressable
+              onPress={handlePrevMonth}
+              hitSlop={6}
+              style={({ pressed }) => [styles.monthNavBtn, pressed && styles.pressed]}
+            >
+              <Ionicons name="chevron-back" size={16} color={c.onSurface} />
+            </Pressable>
+
+            <Pressable
+              onPress={handleNextMonth}
+              hitSlop={6}
+              style={({ pressed }) => [styles.monthNavBtn, pressed && styles.pressed]}
+            >
+              <Ionicons name="chevron-forward" size={16} color={c.onSurface} />
+            </Pressable>
+          </View>
+        </View>
+
+        {/* Days of Week Header */}
+        <View style={styles.weekdaysRow}>
+          {WEEKDAYS.map((wd, i) => (
+            <Text key={i} style={styles.weekdayText}>
+              {wd}
+            </Text>
+          ))}
+        </View>
+
+        {/* Calendar Days Grid */}
+        <View style={styles.daysGrid}>
+          {daysInMonth.map((cell, idx) => {
+            if (!cell.isCurrentMonth) {
+              return <View key={cell.dateKey} style={styles.dayCellPad} />;
+            }
+
+            const isSelected = cell.dateKey === selectedDateKey;
+            const isToday = cell.dateKey === todayKey;
+            const hasLog = Boolean(dailyLogs[cell.dateKey]);
+
+            return (
+              <Pressable
+                key={cell.dateKey}
+                onPress={() => {
+                  void Haptics.selectionAsync();
+                  setSelectedDateKey(cell.dateKey);
+                }}
+                style={({ pressed }) => [
+                  styles.dayCell,
+                  isSelected && styles.dayCellSelected,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.dayNumText,
+                    isToday && styles.dayNumTextToday,
+                    isSelected && styles.dayNumTextSelected,
+                  ]}
+                >
+                  {cell.dayNum}
+                </Text>
+
+                {/* Outfit Indicator Dot */}
+                {hasLog && (
+                  <View
+                    style={[
+                      styles.outfitDot,
+                      isSelected && styles.outfitDotSelected,
+                    ]}
+                  />
+                )}
+              </Pressable>
+            );
+          })}
+        </View>
+
+        {/* Selected Day Log Breakdown */}
+        <View style={styles.dayBreakdownSection}>
+          <View style={styles.dayBreakdownHeader}>
+            <View style={styles.dayBreakdownTitleCol}>
+              <Text style={styles.dayBreakdownDate}>{formatPrettyDate(selectedDateKey)}</Text>
+              <Text style={styles.dayBreakdownSub}>
+                {selectedLoggedPieces.length > 0
+                  ? `${selectedLoggedPieces.length} ${selectedLoggedPieces.length === 1 ? 'piece' : 'pieces'} styled`
+                  : 'No look logged'}
+              </Text>
+            </View>
+
+            <Pressable
+              onPress={handleOpenLogModal}
+              style={({ pressed }) => [styles.logLookBtn, pressed && styles.pressed]}
+            >
+              <Ionicons
+                name={selectedLoggedPieces.length > 0 ? 'pencil' : 'add'}
+                size={14}
+                color={c.onPrimary}
+              />
+              <Text style={styles.logLookBtnText}>
+                {selectedLoggedPieces.length > 0 ? 'Edit Look' : 'Log Outfit'}
+              </Text>
+            </Pressable>
+          </View>
+
+          {/* Logged Pieces Horizontal Preview */}
+          {selectedLoggedPieces.length > 0 ? (
+            <View style={styles.loggedPiecesWrap}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.loggedPiecesRow}
+              >
+                {selectedLoggedPieces.map((piece) => (
+                  <View key={piece.id} style={styles.loggedPieceCard}>
+                    <Image source={{ uri: piece.image }} style={styles.loggedPieceImg} resizeMode="contain" />
+                    <Text style={styles.loggedPieceName} numberOfLines={1}>
+                      {piece.name || piece.category}
+                    </Text>
+                    <Text style={styles.loggedPieceCat}>{piece.category}</Text>
+                  </View>
+                ))}
+              </ScrollView>
+
+              <Pressable
+                onPress={handleRemoveLog}
+                hitSlop={6}
+                style={({ pressed }) => [styles.removeLogBtn, pressed && styles.pressed]}
+              >
+                <Ionicons name="trash-outline" size={13} color={c.error} />
+                <Text style={styles.removeLogText}>Clear day log</Text>
+              </Pressable>
+            </View>
+          ) : (
+            <View style={styles.emptyLogCard}>
+              <Ionicons name="shirt-outline" size={20} color={c.onSurfaceVariant} />
+              <Text style={styles.emptyLogText}>
+                Tap "Log Outfit" to record the pieces you wore on this day.
+              </Text>
+            </View>
+          )}
+        </View>
       </View>
 
       {/* Hero 2x2 Metric Cards */}
@@ -203,7 +508,7 @@ export function StatsScreen({ items }: Props) {
                 <Image source={{ uri: piece.image }} style={styles.wornPieceImg} resizeMode="contain" />
                 <View style={styles.wornPieceInfo}>
                   <Text style={styles.wornPieceName} numberOfLines={1}>
-                    {piece.name}
+                    {piece.name || piece.category}
                   </Text>
                   <Text style={styles.wornPieceCount}>
                     {piece.wearCount === 1 ? '1 wear' : `${piece.wearCount} wears`}
@@ -265,38 +570,125 @@ export function StatsScreen({ items }: Props) {
         </View>
       </View>
 
-      {/* Seasonal Coverage Section */}
+      {/* Season Breakdown Section */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Seasonal Coverage</Text>
+        <Text style={styles.sectionTitle}>Seasonal Balance</Text>
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.seasonRowScroll}
-        >
-          {seasons.map((s) => {
-            const count = seasonCounts[s];
-            const iconName = SEASON_ICONS[s];
-            const seasonAccent = {
-              'All-Season': c.gold,
-              Spring: '#3B8A5A',
-              Summer: '#E08700',
-              Fall: '#BA4A38',
-              Winter: '#3077C6',
-            }[s];
-
-            return (
-              <View key={s} style={[styles.seasonCard, count > 0 && { borderColor: seasonAccent + '40' }]}>
-                <View style={[styles.seasonIconWrap, { backgroundColor: seasonAccent + '18' }]}>
-                  <Ionicons name={iconName} size={18} color={seasonAccent} />
-                </View>
-                <Text style={styles.seasonCardCount}>{count}</Text>
-                <Text style={styles.seasonCardName}>{s}</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.seasonRowScroll}>
+          {([
+            { id: 'Spring', name: 'Spring', count: seasonCounts.Spring, icon: SEASON_ICONS.Spring, color: c.seasonSpring, bg: c.seasonSpringBg },
+            { id: 'Summer', name: 'Summer', count: seasonCounts.Summer, icon: SEASON_ICONS.Summer, color: c.seasonSummer, bg: c.seasonSummerBg },
+            { id: 'Fall', name: 'Fall', count: seasonCounts.Fall, icon: SEASON_ICONS.Fall, color: c.seasonFall, bg: c.seasonFallBg },
+            { id: 'Winter', name: 'Winter', count: seasonCounts.Winter, icon: SEASON_ICONS.Winter, color: c.seasonWinter, bg: c.seasonWinterBg },
+            { id: 'All-Season', name: 'All-Season', count: seasonCounts['All-Season'], icon: 'infinite', color: c.gold, bg: c.goldContainer },
+          ] as const).map((s) => (
+            <View key={s.id} style={styles.seasonCard}>
+              <View style={[styles.seasonIconWrap, { backgroundColor: s.bg }]}>
+                <Ionicons name={s.icon as keyof typeof Ionicons.glyphMap} size={17} color={s.color} />
               </View>
-            );
-          })}
+              <Text style={styles.seasonCardCount}>{s.count}</Text>
+              <Text style={styles.seasonCardName}>{s.name}</Text>
+            </View>
+          ))}
         </ScrollView>
       </View>
+
+      {/* Log Outfit Selection Modal */}
+      <Modal
+        visible={logModalOpen}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setLogModalOpen(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <Pressable style={styles.modalScrim} onPress={() => setLogModalOpen(false)} />
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <View>
+                <Text style={styles.modalTitle}>Log Outfit</Text>
+                <Text style={styles.modalSubtitle}>{formatPrettyDate(selectedDateKey)}</Text>
+              </View>
+
+              <Pressable onPress={() => setLogModalOpen(false)} hitSlop={8}>
+                <Ionicons name="close" size={22} color={c.onSurface} />
+              </Pressable>
+            </View>
+
+            {/* Category Filter for Logger */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.modalCatRow}
+            >
+              {categories.map((cat) => (
+                <Pressable
+                  key={cat}
+                  onPress={() => setModalCategory(cat)}
+                  style={[
+                    styles.modalCatChip,
+                    modalCategory === cat && styles.modalCatChipActive,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.modalCatChipText,
+                      modalCategory === cat && styles.modalCatChipTextActive,
+                    ]}
+                  >
+                    {cat}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+
+            {/* Pieces Grid to Select Worn Outfit */}
+            <ScrollView style={styles.modalPiecesList} showsVerticalScrollIndicator={false}>
+              {filteredModalItems.length === 0 ? (
+                <Text style={styles.modalEmptyText}>No pieces in this category</Text>
+              ) : (
+                <View style={styles.modalPiecesGrid}>
+                  {filteredModalItems.map((item) => {
+                    const isSelected = selectedPieceIds.includes(item.id);
+                    return (
+                      <Pressable
+                        key={item.id}
+                        onPress={() => handleTogglePieceSelect(item.id)}
+                        style={[
+                          styles.modalPieceTile,
+                          isSelected && styles.modalPieceTileSelected,
+                        ]}
+                      >
+                        <Image source={{ uri: item.image }} style={styles.modalPieceImg} resizeMode="contain" />
+                        <Text style={styles.modalPieceName} numberOfLines={1}>
+                          {item.name || item.category}
+                        </Text>
+                        {isSelected && (
+                          <View style={styles.modalCheckmark}>
+                            <Ionicons name="checkmark" size={12} color="#FFFFFF" />
+                          </View>
+                        )}
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              )}
+            </ScrollView>
+
+            {/* Save Log Action Footer */}
+            <View style={styles.modalFooter}>
+              <Text style={styles.selectedCountText}>
+                {selectedPieceIds.length} {selectedPieceIds.length === 1 ? 'piece' : 'pieces'} selected
+              </Text>
+              <Pressable
+                onPress={handleSaveDailyLog}
+                style={({ pressed }) => [styles.saveLogBtn, pressed && styles.pressed]}
+              >
+                <Text style={styles.saveLogBtnText}>Save Look</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -308,12 +700,12 @@ const makeStyles = (c: Palette) =>
       backgroundColor: c.surface,
     },
     scrollContent: {
-      paddingHorizontal: 18,
+      paddingHorizontal: 16,
       paddingTop: 16,
-      paddingBottom: 24,
+      paddingBottom: 110,
     },
     header: {
-      marginBottom: 20,
+      marginBottom: 18,
     },
     kickerRow: {
       flexDirection: 'row',
@@ -344,8 +736,221 @@ const makeStyles = (c: Palette) =>
     title: {
       fontFamily: fonts.displayBold,
       color: c.onSurface,
-      fontSize: 32,
-      letterSpacing: -0.4,
+      fontSize: 30,
+      letterSpacing: -0.5,
+    },
+    calendarCard: {
+      backgroundColor: c.cardBg,
+      borderRadius: shapes.xxl,
+      borderWidth: 1,
+      borderColor: c.outlineVariant,
+      padding: 16,
+      marginBottom: 20,
+      shadowColor: '#000',
+      shadowOpacity: 0.05,
+      shadowRadius: 10,
+      shadowOffset: { width: 0, height: 3 },
+      elevation: 2,
+    },
+    calendarHeaderRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 14,
+    },
+    monthTitleWrap: {
+      flex: 1,
+    },
+    monthTitleText: {
+      fontFamily: fonts.displayBold,
+      color: c.onSurface,
+      fontSize: 18,
+      letterSpacing: -0.2,
+    },
+    calendarNavActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    todayBtn: {
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: shapes.full,
+      backgroundColor: c.surfaceContainerHigh,
+      marginRight: 4,
+    },
+    todayBtnText: {
+      fontFamily: fonts.bold,
+      color: c.onSurface,
+      fontSize: 11.5,
+    },
+    monthNavBtn: {
+      width: 30,
+      height: 30,
+      borderRadius: 15,
+      backgroundColor: c.surfaceContainerHigh,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    weekdaysRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      paddingBottom: 8,
+      borderBottomWidth: 1,
+      borderBottomColor: c.outlineVariant,
+      marginBottom: 8,
+    },
+    weekdayText: {
+      width: `${100 / 7}%`,
+      textAlign: 'center',
+      fontFamily: fonts.bold,
+      color: c.onSurfaceVariant,
+      fontSize: 11,
+      letterSpacing: 0.5,
+    },
+    daysGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+    },
+    dayCellPad: {
+      width: `${100 / 7}%`,
+      height: 40,
+    },
+    dayCell: {
+      width: `${100 / 7}%`,
+      height: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: shapes.md,
+      position: 'relative',
+    },
+    dayCellSelected: {
+      backgroundColor: c.primary,
+    },
+    dayNumText: {
+      fontFamily: fonts.medium,
+      color: c.onSurface,
+      fontSize: 13,
+    },
+    dayNumTextToday: {
+      fontFamily: fonts.bold,
+      color: c.gold,
+    },
+    dayNumTextSelected: {
+      fontFamily: fonts.bold,
+      color: c.onPrimary,
+    },
+    outfitDot: {
+      position: 'absolute',
+      bottom: 4,
+      width: 4,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: c.gold,
+    },
+    outfitDotSelected: {
+      backgroundColor: '#FFFFFF',
+    },
+    dayBreakdownSection: {
+      marginTop: 14,
+      paddingTop: 14,
+      borderTopWidth: 1,
+      borderTopColor: c.outlineVariant,
+    },
+    dayBreakdownHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 10,
+    },
+    dayBreakdownTitleCol: {
+      flex: 1,
+    },
+    dayBreakdownDate: {
+      fontFamily: fonts.bold,
+      color: c.onSurface,
+      fontSize: 14,
+      letterSpacing: -0.1,
+    },
+    dayBreakdownSub: {
+      fontFamily: fonts.medium,
+      color: c.onSurfaceVariant,
+      fontSize: 11.5,
+      marginTop: 1,
+    },
+    logLookBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+      backgroundColor: c.primary,
+      paddingHorizontal: 12,
+      paddingVertical: 7,
+      borderRadius: shapes.full,
+    },
+    logLookBtnText: {
+      fontFamily: fonts.bold,
+      color: c.onPrimary,
+      fontSize: 11.5,
+    },
+    loggedPiecesWrap: {
+      marginTop: 4,
+    },
+    loggedPiecesRow: {
+      gap: 8,
+      paddingBottom: 6,
+    },
+    loggedPieceCard: {
+      width: 76,
+      backgroundColor: c.surfaceContainerHigh,
+      borderRadius: shapes.md,
+      padding: 6,
+      alignItems: 'center',
+    },
+    loggedPieceImg: {
+      width: '100%',
+      height: 60,
+      marginBottom: 4,
+    },
+    loggedPieceName: {
+      fontFamily: fonts.bold,
+      color: c.onSurface,
+      fontSize: 10.5,
+      textAlign: 'center',
+    },
+    loggedPieceCat: {
+      fontFamily: fonts.medium,
+      color: c.onSurfaceVariant,
+      fontSize: 9.5,
+      textAlign: 'center',
+    },
+    removeLogBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 4,
+      marginTop: 8,
+      paddingVertical: 4,
+    },
+    removeLogText: {
+      fontFamily: fonts.semiBold,
+      color: c.error,
+      fontSize: 11,
+    },
+    emptyLogCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      backgroundColor: c.surfaceContainerLow,
+      borderRadius: shapes.lg,
+      padding: 12,
+      marginTop: 4,
+    },
+    emptyLogText: {
+      flex: 1,
+      fontFamily: fonts.medium,
+      color: c.onSurfaceVariant,
+      fontSize: 11.5,
+      lineHeight: 16,
     },
     metricGrid: {
       flexDirection: 'row',
@@ -582,5 +1187,150 @@ const makeStyles = (c: Palette) =>
       fontFamily: fonts.medium,
       color: c.onSurfaceVariant,
       fontSize: 11.5,
+    },
+    modalBackdrop: {
+      flex: 1,
+      justifyContent: 'flex-end',
+      backgroundColor: c.scrim,
+    },
+    modalScrim: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+    },
+    modalCard: {
+      backgroundColor: c.surfaceContainerLow,
+      borderTopLeftRadius: shapes.xxl,
+      borderTopRightRadius: shapes.xxl,
+      maxHeight: '80%',
+      paddingTop: 16,
+      paddingBottom: 32,
+      borderWidth: 1,
+      borderColor: c.outlineVariant,
+    },
+    modalHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 20,
+      paddingBottom: 12,
+    },
+    modalTitle: {
+      fontFamily: fonts.displayBold,
+      color: c.onSurface,
+      fontSize: 20,
+    },
+    modalSubtitle: {
+      fontFamily: fonts.medium,
+      color: c.onSurfaceVariant,
+      fontSize: 12.5,
+      marginTop: 1,
+    },
+    modalCatRow: {
+      paddingHorizontal: 16,
+      gap: 6,
+      paddingVertical: 8,
+    },
+    modalCatChip: {
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: shapes.full,
+      backgroundColor: c.surfaceContainerHigh,
+    },
+    modalCatChipActive: {
+      backgroundColor: c.primary,
+    },
+    modalCatChipText: {
+      fontFamily: fonts.medium,
+      color: c.onSurfaceVariant,
+      fontSize: 12,
+    },
+    modalCatChipTextActive: {
+      fontFamily: fonts.bold,
+      color: c.onPrimary,
+    },
+    modalPiecesList: {
+      paddingHorizontal: 16,
+      maxHeight: 280,
+    },
+    modalPiecesGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 10,
+      paddingVertical: 8,
+    },
+    modalPieceTile: {
+      width: '31%',
+      backgroundColor: c.cardBg,
+      borderRadius: shapes.lg,
+      borderWidth: 1,
+      borderColor: c.outlineVariant,
+      padding: 6,
+      alignItems: 'center',
+      position: 'relative',
+    },
+    modalPieceTileSelected: {
+      borderColor: c.gold,
+      backgroundColor: c.goldContainer,
+    },
+    modalPieceImg: {
+      width: '100%',
+      height: 70,
+      marginBottom: 4,
+    },
+    modalPieceName: {
+      fontFamily: fonts.bold,
+      color: c.onSurface,
+      fontSize: 10.5,
+      textAlign: 'center',
+    },
+    modalCheckmark: {
+      position: 'absolute',
+      top: 4,
+      right: 4,
+      width: 18,
+      height: 18,
+      borderRadius: 9,
+      backgroundColor: c.gold,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    modalEmptyText: {
+      fontFamily: fonts.medium,
+      color: c.onSurfaceVariant,
+      fontSize: 13,
+      textAlign: 'center',
+      paddingVertical: 32,
+    },
+    modalFooter: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 20,
+      paddingTop: 14,
+      borderTopWidth: 1,
+      borderTopColor: c.outlineVariant,
+    },
+    selectedCountText: {
+      fontFamily: fonts.semiBold,
+      color: c.onSurfaceVariant,
+      fontSize: 12.5,
+    },
+    saveLogBtn: {
+      backgroundColor: c.primary,
+      paddingHorizontal: 20,
+      paddingVertical: 10,
+      borderRadius: shapes.full,
+    },
+    saveLogBtnText: {
+      fontFamily: fonts.bold,
+      color: c.onPrimary,
+      fontSize: 13,
+    },
+    pressed: {
+      opacity: 0.75,
+      transform: [{ scale: 0.96 }],
     },
   });
