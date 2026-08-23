@@ -16,20 +16,54 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { File } from 'expo-file-system';
 import type { Category, Item, SavedOutfit } from '../types';
-import { categories } from '../constants';
+import { OUTFITS_STORAGE_KEY, categories } from '../constants';
 import { useTheme, fonts, shapes, type Palette } from '../theme';
 
-const OUTFITS_STORAGE_KEY = '@atelier_saved_outfits_v1';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+let instanceSeq = 0;
+const nextInstanceId = (prefix: string) => `${prefix}-${++instanceSeq}`;
+
+const randomRange = (min: number, max: number) => min + Math.random() * (max - min);
+
+const pickRandom = <T,>(list: T[]): T => list[Math.floor(Math.random() * list.length)];
+
+const formatToday = () =>
+  new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+const fileExists = (uri: string): boolean => {
+  if (!uri.startsWith('file://')) return true;
+  try {
+    return new File(uri).exists;
+  } catch {
+    return false;
+  }
+};
+
+const resolvePieceImage = (
+  piece: SavedOutfit['pieces'][number],
+  items: Item[]
+): string | null => {
+  if (fileExists(piece.image)) return piece.image;
+  const live = items.find((i) => i.id === piece.itemId);
+  if (live && fileExists(live.image)) return live.image;
+  return null;
+};
+
+function useConst<T>(factory: () => T): T {
+  const [value] = useState(factory);
+  return value;
+}
 
 type CanvasPieceData = {
   instanceId: string;
   item: Item;
   scale: number;
   zIndex: number;
-  initialX: number;
-  initialY: number;
+  x: number;
+  y: number;
 };
 
 type DraggablePieceProps = {
@@ -39,6 +73,7 @@ type DraggablePieceProps = {
   onRemove: () => void;
   onBringToFront: () => void;
   onUpdateScale: (newScale: number) => void;
+  onMoveEnd: (x: number, y: number) => void;
   palette: Palette;
 };
 
@@ -49,13 +84,13 @@ function DraggablePiece({
   onRemove,
   onBringToFront,
   onUpdateScale,
+  onMoveEnd,
   palette,
 }: DraggablePieceProps) {
-  const pan = useRef(new Animated.ValueXY({ x: data.initialX, y: data.initialY })).current;
-  const lastOffset = useRef({ x: data.initialX, y: data.initialY });
+  const pan = useConst(() => new Animated.ValueXY({ x: data.x, y: data.y }));
+  const lastOffset = useRef({ x: data.x, y: data.y });
 
-  // Scale Animated Value
-  const scaleAnim = useRef(new Animated.Value(data.scale)).current;
+  const scaleAnim = useConst(() => new Animated.Value(data.scale));
   const currentScaleRef = useRef<number>(data.scale);
 
   useEffect(() => {
@@ -68,7 +103,7 @@ function DraggablePiece({
   const pinchStartScaleRef = useRef<number>(data.scale);
   const isPinchingRef = useRef<boolean>(false);
 
-  const mainPanResponder = useRef(
+  const mainPanResponder = useConst(() =>
     PanResponder.create({
       onStartShouldSetPanResponder: () => false,
       onStartShouldSetPanResponderCapture: () => false,
@@ -139,14 +174,15 @@ function DraggablePiece({
             x: lastOffset.current.x + gestureState.dx,
             y: lastOffset.current.y + gestureState.dy,
           };
+          onMoveEnd(lastOffset.current.x, lastOffset.current.y);
         }
       },
     })
-  ).current;
+  );
 
   // Corner Drag-to-Resize Responder
   const startDragScaleRef = useRef(1);
-  const cornerResizeResponder = useRef(
+  const cornerResizeResponder = useConst(() =>
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
@@ -164,7 +200,7 @@ function DraggablePiece({
         onUpdateScale(currentScaleRef.current);
       },
     })
-  ).current;
+  );
 
   const baseWidth = 145;
   const baseHeight = 180;
@@ -195,6 +231,7 @@ function DraggablePiece({
             width: baseWidth,
             height: baseHeight,
             borderColor: isSelected ? palette.gold : 'transparent',
+            borderWidth: isSelected ? 1.5 : 0,
           },
         ]}
       >
@@ -215,7 +252,7 @@ function DraggablePiece({
                   void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   onBringToFront();
                 }}
-                hitSlop={12}
+                hitSlop={14}
                 style={[styles.miniControlBtn, { backgroundColor: palette.primary }]}
               >
                 <Ionicons name="arrow-up" size={12} color={palette.onPrimary} />
@@ -227,7 +264,7 @@ function DraggablePiece({
                   void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                   onRemove();
                 }}
-                hitSlop={12}
+                hitSlop={14}
                 style={[styles.miniControlBtn, { backgroundColor: palette.error }]}
               >
                 <Ionicons name="close" size={12} color="#FFFFFF" />
@@ -264,8 +301,10 @@ export function OutfitCanvas({ items }: Props) {
   const [showSavedModal, setShowSavedModal] = useState(false);
   const [showSavePrompt, setShowSavePrompt] = useState(false);
   const [outfitName, setOutfitName] = useState('');
+  const [lastRemovedPiece, setLastRemovedPiece] = useState<CanvasPieceData | null>(null);
 
   const nextZIndex = useRef(10);
+  const undoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     AsyncStorage.getItem(OUTFITS_STORAGE_KEY)
@@ -284,17 +323,17 @@ export function OutfitCanvas({ items }: Props) {
 
   const handleAddPiece = (item: Item) => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const instanceId = `${item.id}-${Date.now()}`;
-    const initialX = SCREEN_WIDTH / 2 - 72 + (Math.random() * 30 - 15);
-    const initialY = 100 + (Math.random() * 30 - 15);
+    const instanceId = nextInstanceId(item.id);
+    const x = SCREEN_WIDTH / 2 - 72 + randomRange(-15, 15);
+    const y = 100 + randomRange(-15, 15);
 
     const newPiece: CanvasPieceData = {
       instanceId,
       item,
       scale: 1,
       zIndex: nextZIndex.current++,
-      initialX,
-      initialY,
+      x,
+      y,
     };
 
     setCanvasPieces((prev) => [...prev, newPiece]);
@@ -302,10 +341,27 @@ export function OutfitCanvas({ items }: Props) {
   };
 
   const handleRemovePiece = (instanceId: string) => {
+    const piece = canvasPieces.find((p) => p.instanceId === instanceId);
+    if (piece) {
+      setLastRemovedPiece(piece);
+      if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
+      undoTimeoutRef.current = setTimeout(() => {
+        setLastRemovedPiece(null);
+      }, 4000);
+    }
     setCanvasPieces((prev) => prev.filter((p) => p.instanceId !== instanceId));
     if (selectedInstanceId === instanceId) {
       setSelectedInstanceId(null);
     }
+  };
+
+  const handleUndoRemove = () => {
+    if (!lastRemovedPiece) return;
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setCanvasPieces((prev) => [...prev, lastRemovedPiece]);
+    setSelectedInstanceId(lastRemovedPiece.instanceId);
+    setLastRemovedPiece(null);
+    if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
   };
 
   const handleBringToFront = (instanceId: string) => {
@@ -321,6 +377,12 @@ export function OutfitCanvas({ items }: Props) {
     );
   };
 
+  const handleUpdatePosition = (instanceId: string, x: number, y: number) => {
+    setCanvasPieces((prev) =>
+      prev.map((p) => (p.instanceId === instanceId ? { ...p, x, y } : p))
+    );
+  };
+
   const handleClear = () => {
     if (canvasPieces.length === 0) return;
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -332,6 +394,7 @@ export function OutfitCanvas({ items }: Props) {
         onPress: () => {
           setCanvasPieces([]);
           setSelectedInstanceId(null);
+          setLastRemovedPiece(null);
         },
       },
     ]);
@@ -352,49 +415,49 @@ export function OutfitCanvas({ items }: Props) {
     const useDress = dresses.length > 0 && Math.random() > 0.5;
 
     if (useDress) {
-      const dress = dresses[Math.floor(Math.random() * dresses.length)];
+      const dress = pickRandom(dresses);
       newPieces.push({
-        instanceId: `${dress.id}-${Date.now()}-1`,
+        instanceId: nextInstanceId(dress.id),
         item: dress,
         scale: 1.1,
         zIndex: 10,
-        initialX: SCREEN_WIDTH / 2 - 75,
-        initialY: 60,
+        x: SCREEN_WIDTH / 2 - 75,
+        y: 60,
       });
     } else {
       if (tops.length > 0) {
-        const top = tops[Math.floor(Math.random() * tops.length)];
+        const top = pickRandom(tops);
         newPieces.push({
-          instanceId: `${top.id}-${Date.now()}-1`,
+          instanceId: nextInstanceId(top.id),
           item: top,
           scale: 1,
           zIndex: 10,
-          initialX: SCREEN_WIDTH / 2 - 72,
-          initialY: 40,
+          x: SCREEN_WIDTH / 2 - 72,
+          y: 40,
         });
       }
       if (bottoms.length > 0) {
-        const bottom = bottoms[Math.floor(Math.random() * bottoms.length)];
+        const bottom = pickRandom(bottoms);
         newPieces.push({
-          instanceId: `${bottom.id}-${Date.now()}-2`,
+          instanceId: nextInstanceId(bottom.id),
           item: bottom,
           scale: 1,
           zIndex: 11,
-          initialX: SCREEN_WIDTH / 2 - 72,
-          initialY: 155,
+          x: SCREEN_WIDTH / 2 - 72,
+          y: 155,
         });
       }
     }
 
     if (shoes.length > 0) {
-      const shoe = shoes[Math.floor(Math.random() * shoes.length)];
+      const shoe = pickRandom(shoes);
       newPieces.push({
-        instanceId: `${shoe.id}-${Date.now()}-3`,
+        instanceId: nextInstanceId(shoe.id),
         item: shoe,
         scale: 0.85,
         zIndex: 12,
-        initialX: SCREEN_WIDTH / 2 - 62,
-        initialY: 280,
+        x: SCREEN_WIDTH / 2 - 62,
+        y: 280,
       });
     }
 
@@ -406,16 +469,16 @@ export function OutfitCanvas({ items }: Props) {
     if (canvasPieces.length === 0) return;
     const nameToSave = outfitName.trim() || `Look ${savedOutfits.length + 1}`;
     const newOutfit: SavedOutfit = {
-      id: `${Date.now()}`,
+      id: nextInstanceId('outfit'),
       name: nameToSave,
-      createdAt: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      createdAt: formatToday(),
       pieces: canvasPieces.map((p) => ({
         itemId: p.item.id,
         image: p.item.image,
         name: p.item.name,
         category: p.item.category,
-        x: p.initialX,
-        y: p.initialY,
+        x: p.x,
+        y: p.y,
         scale: p.scale,
       })),
     };
@@ -428,19 +491,33 @@ export function OutfitCanvas({ items }: Props) {
 
   const handleLoadOutfit = (outfit: SavedOutfit) => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const loaded: CanvasPieceData[] = outfit.pieces.map((p, index) => ({
-      instanceId: `${p.itemId}-${Date.now()}-${index}`,
-      item: {
-        id: p.itemId,
-        image: p.image,
-        name: p.name,
-        category: p.category,
-      },
-      scale: p.scale || 1,
-      zIndex: 10 + index,
-      initialX: p.x || SCREEN_WIDTH / 2 - 72,
-      initialY: p.y || 80 + index * 80,
-    }));
+    const loaded: CanvasPieceData[] = [];
+    outfit.pieces.forEach((p, index) => {
+      const image = resolvePieceImage(p, items);
+      if (!image) return;
+      loaded.push({
+        instanceId: nextInstanceId(p.itemId),
+        item: {
+          id: p.itemId,
+          image,
+          name: p.name,
+          category: p.category,
+        },
+        scale: p.scale || 1,
+        zIndex: 10 + index,
+        x: p.x || SCREEN_WIDTH / 2 - 72,
+        y: p.y || 80 + index * 80,
+      });
+    });
+
+    if (loaded.length === 0) {
+      Alert.alert(
+        'Look unavailable',
+        'The photos in this look are no longer in your archive.',
+        [{ text: 'OK', onPress: () => setShowSavedModal(false) }]
+      );
+      return;
+    }
 
     setCanvasPieces(loaded);
     setShowSavedModal(false);
@@ -462,8 +539,8 @@ export function OutfitCanvas({ items }: Props) {
       <View style={styles.topToolbar}>
         <View style={styles.toolbarLeft}>
           <Text style={styles.canvasTitle}>Studio Canvas</Text>
-          <Text style={styles.canvasSubtitle}>
-            Pinch to resize or drag corner
+          <Text style={styles.canvasSubtitle} numberOfLines={1}>
+            Pinch to resize or pull corner handle
           </Text>
         </View>
 
@@ -541,9 +618,20 @@ export function OutfitCanvas({ items }: Props) {
               onRemove={() => handleRemovePiece(piece.instanceId)}
               onBringToFront={() => handleBringToFront(piece.instanceId)}
               onUpdateScale={(newScale) => handleUpdateScale(piece.instanceId, newScale)}
+              onMoveEnd={(x, y) => handleUpdatePosition(piece.instanceId, x, y)}
               palette={c}
             />
           ))
+        )}
+
+        {/* Undo Floating Banner */}
+        {lastRemovedPiece && (
+          <View style={styles.undoBanner}>
+            <Text style={styles.undoText}>Piece removed</Text>
+            <Pressable onPress={handleUndoRemove} hitSlop={8} style={styles.undoBtn}>
+              <Text style={styles.undoBtnText}>Undo</Text>
+            </Pressable>
+          </View>
         )}
       </Pressable>
 
@@ -619,7 +707,12 @@ export function OutfitCanvas({ items }: Props) {
       </View>
 
       {/* Save Look Prompt Modal */}
-      <Modal visible={showSavePrompt} transparent animationType="fade">
+      <Modal
+        visible={showSavePrompt}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowSavePrompt(false)}
+      >
         <View style={styles.modalBackdrop}>
           <View style={styles.promptModal}>
             <Text style={styles.promptTitle}>Save Styled Look</Text>
@@ -653,7 +746,12 @@ export function OutfitCanvas({ items }: Props) {
       </Modal>
 
       {/* Saved Looks Collection Modal */}
-      <Modal visible={showSavedModal} transparent animationType="slide">
+      <Modal
+        visible={showSavedModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowSavedModal(false)}
+      >
         <View style={styles.modalBackdrop}>
           <View style={styles.savedModalCard}>
             <View style={styles.savedModalHeader}>
@@ -670,36 +768,41 @@ export function OutfitCanvas({ items }: Props) {
                   <Text style={styles.emptySavedText}>No saved outfits yet.</Text>
                 </View>
               ) : (
-                savedOutfits.map((outfit) => (
-                  <View key={outfit.id} style={styles.savedOutfitCard}>
-                    <View style={styles.savedOutfitInfo}>
-                      <Text style={styles.savedOutfitName}>{outfit.name}</Text>
-                      <Text style={styles.savedOutfitDate}>
-                        {outfit.createdAt} • {outfit.pieces.length} pieces
-                      </Text>
-                      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.savedThumbsRow}>
-                        {outfit.pieces.map((p, i) => (
-                          <Image key={i} source={{ uri: p.image }} style={styles.savedMiniThumb} resizeMode="contain" />
-                        ))}
-                      </ScrollView>
-                    </View>
+                savedOutfits.map((outfit) => {
+                  const validPieces = outfit.pieces.filter(
+                    (p) => resolvePieceImage(p, items) !== null
+                  );
+                  return (
+                    <View key={outfit.id} style={styles.savedOutfitCard}>
+                      <View style={styles.savedOutfitInfo}>
+                        <Text style={styles.savedOutfitName}>{outfit.name}</Text>
+                        <Text style={styles.savedOutfitDate}>
+                          {outfit.createdAt} • {validPieces.length} pieces
+                        </Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.savedThumbsRow}>
+                          {validPieces.map((p, i) => (
+                            <Image key={i} source={{ uri: p.image }} style={styles.savedMiniThumb} resizeMode="contain" />
+                          ))}
+                        </ScrollView>
+                      </View>
 
-                    <View style={styles.savedOutfitActions}>
-                      <Pressable
-                        onPress={() => handleLoadOutfit(outfit)}
-                        style={styles.loadOutfitBtn}
-                      >
-                        <Text style={styles.loadOutfitBtnText}>Load</Text>
-                      </Pressable>
-                      <Pressable
-                        onPress={() => handleDeleteSavedOutfit(outfit.id)}
-                        style={styles.deleteOutfitBtn}
-                      >
-                        <Ionicons name="trash-outline" size={16} color={c.error} />
-                      </Pressable>
+                      <View style={styles.savedOutfitActions}>
+                        <Pressable
+                          onPress={() => handleLoadOutfit(outfit)}
+                          style={[styles.loadOutfitBtn, validPieces.length === 0 && styles.toolBtnDisabled]}
+                        >
+                          <Text style={styles.loadOutfitBtnText}>Load</Text>
+                        </Pressable>
+                        <Pressable
+                          onPress={() => handleDeleteSavedOutfit(outfit.id)}
+                          style={styles.deleteOutfitBtn}
+                        >
+                          <Ionicons name="trash-outline" size={16} color={c.error} />
+                        </Pressable>
+                      </View>
                     </View>
-                  </View>
-                ))
+                  );
+                })
               )}
             </ScrollView>
           </View>
@@ -715,13 +818,17 @@ const styles = StyleSheet.create({
   },
   pieceFrame: {
     borderRadius: shapes.lg,
-    borderWidth: 1.5,
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 4,
     position: 'relative',
     backgroundColor: 'transparent',
+    shadowColor: '#000',
+    shadowOpacity: 0.14,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
   },
   pieceImage: {
     width: '100%',
@@ -780,7 +887,10 @@ const makeStyles = (c: Palette) =>
       borderBottomWidth: 1,
       borderBottomColor: c.outlineVariant,
     },
-    toolbarLeft: {},
+    toolbarLeft: {
+      flex: 1,
+      marginRight: 10,
+    },
     canvasTitle: {
       fontFamily: fonts.displayBold,
       color: c.onSurface,
@@ -863,6 +973,39 @@ const makeStyles = (c: Palette) =>
       fontSize: 13,
       lineHeight: 19,
       textAlign: 'center',
+    },
+    undoBanner: {
+      position: 'absolute',
+      bottom: 16,
+      alignSelf: 'center',
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: c.primary,
+      borderRadius: shapes.full,
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      gap: 12,
+      shadowColor: '#000',
+      shadowOpacity: 0.25,
+      shadowRadius: 6,
+      elevation: 6,
+      zIndex: 1000,
+    },
+    undoText: {
+      fontFamily: fonts.medium,
+      color: c.onPrimary,
+      fontSize: 12.5,
+    },
+    undoBtn: {
+      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+      borderRadius: shapes.full,
+      paddingHorizontal: 10,
+      paddingVertical: 3,
+    },
+    undoBtnText: {
+      fontFamily: fonts.bold,
+      color: c.gold,
+      fontSize: 12,
     },
     drawerContainer: {
       backgroundColor: c.surfaceContainerLow,

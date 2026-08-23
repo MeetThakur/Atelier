@@ -1,8 +1,8 @@
-# AGENTS.md — AI context for the Closet app
+# AGENTS.md — AI context for the Atelier app
 
 ## What this is
 
-"Closet" — a personal digital wardrobe app. Users photograph their clothes, organize them into categories, mark favorites and worn-today. Single-screen Expo app; all data stays on-device.
+"Atelier" — a personal digital wardrobe app. Users photograph their clothes, organize them into categories and seasons, mark favorites, compose outfits on an interactive canvas, and view wardrobe analytics. Three-tab Expo app (Archive / Studio / Stats); all data stays on-device.
 
 ## Stack & versions (do not drift)
 
@@ -25,22 +25,28 @@ npx expo install <pkg> # ALWAYS install RN/expo packages via this, never raw npm
 
 ## Architecture
 
-Modular layout under `src/`; `App.tsx` is only a composition root (providers + screen wiring).
+Modular layout under `src/`; `App.tsx` owns tab state + archive screen wiring; tabs render conditionally (`activeTab === 'archive' | 'canvas' | 'stats'`).
 
 ```
-App.tsx                  screen: state wiring (category/query/sort/editing) + FlatList layout
+App.tsx                  tab state, archive screen: filters/sort/modals + FlatList grid
 src/
-  theme.ts               light/dark palettes + useTheme() hook — ALL colors come from here
-  types.ts               Category, ClothingCategory, Item, SortMode, NewItemDraft, EditItemDraft
-  constants.ts           STORAGE_KEY, categories, clothingCategories
-  lib/format.ts          greeting(), todayISO()
-  lib/files.ts           storeImage() / deleteStoredImage() — compresses to ≤1080px JPEG then copies
-                         into documentDirectory/closet/<id>.jpg (expo-file-system object API)
+  theme.tsx              ThemeProvider context; light/dark "Haute Editorial" palettes with gold
+                         tokens; mode persisted (@atelier_theme_mode). ALL colors come from here.
+  types.ts               Category, ClothingCategory, Season, SortMode, AppTab, Item,
+                         SavedOutfit, NewItemDraft
+  constants.ts           STORAGE_KEY ('closet.items.v1'), OUTFITS_STORAGE_KEY
+                         ('@atelier_saved_outfits_v1'), categories, seasons, SEASON_ICONS
+  lib/format.ts          greeting(), formatHeaderDate(), formatDate()
+  lib/files.ts           storeImage() / deleteStoredImage() — compresses to ≤1080px wide PNG
+                         (PNG preserves alpha for clothing cutouts) then copies into
+                         documentDirectory/closet/<id>.png (expo-file-system object API)
   lib/images.ts          pickImage(camera|library) single, pickImages(limit 8) multi; permission Alerts live here
   lib/storage.ts         loadItems() / saveItems()
-  hooks/useCloset.ts     items state, loaded gate, saveFailed flag, add/update/remove/favorite/wornToday
-  components/            Header, SearchBar, CategoryChips, SectionHeader,
-                         ItemCard (memo), EmptyState, Fab, AddItemModal (add+edit sheet)
+  hooks/useCloset.ts     items state, loaded gate, saveFailed flag, addItem/toggleFavorite/removeItem
+  components/            Header, SearchBar, CategoryChips, SectionHeader, FilterModal,
+                         ItemCard (memo, double-tap heart), EmptyState, Fab, AddItemModal,
+                         BottomNavBar, OutfitCanvas (Studio tab), StatsScreen (Stats tab),
+                         ItemDetailModal, ItemActionSheet
 scripts/make-icons.mjs   regenerates assets/icon.png, adaptive-icon.png, splash-icon.png
 assets/                  generated app icons + splash image
 eas.json                 preview profile builds an installable APK
@@ -50,18 +56,20 @@ eas.json                 preview profile builds an installable APK
 
 - Use `SafeAreaView` from `react-native-safe-area-context` (wrapped in `SafeAreaProvider`) — NOT the one from `react-native`. Android runs edge-to-edge by default on RN 0.86; the built-in view overlaps the status bar.
 - Picked image URIs are temporary cache files — they MUST be copied via `storeImage()` before storing, or photos vanish after restart.
-- Deleting an item must also delete its file (`deleteStoredImage()` in `lib/files.ts`, guarded by `startsWith('file://')`).
+- Deleting an item must also delete its file (`deleteStoredImage()` in `lib/files.ts`, guarded by `startsWith('file://')`). Saved outfits reference item image URIs, so OutfitCanvas resolves pieces through `resolvePieceImage()` (checks `File.exists`, falls back to live item) before rendering/loading.
 - Camera/library permission denials are handled inline with `Alert.alert` pointing at Settings.
 - No starter/demo items: first launch is intentionally empty with an empty state.
 - Components must be theme-aware: call `useTheme()` inside render and build styles via a `makeStyles(c)` module-level function — never import colors statically (dark mode would break).
-- The add/edit sheet seeds state via a `key` on the inner component (`SheetBody`) to remount per item — do NOT reintroduce setState-in-effect seeding (eslint react-hooks/set-state-in-effect).
+- Sheets/modal forms reset via remount: outer component renders inner sheet with a `key` derived from `visible` — do NOT reintroduce setState-in-effect resets (eslint react-hooks/set-state-in-effect).
+- Animated.Value / PanResponder singletons in DraggablePiece are created with a `useConst(() => ...)` lazy useState helper — never `useRef(x).current` during render (eslint react-hooks/refs) and never `Date.now()`/`Math.random()` inside components (eslint react-hooks/purity; use module-scope helpers like `nextInstanceId`/`randomRange`).
+- Dragged piece positions must be reported back up to parent state (`onMoveEnd` → `handleUpdatePosition`) — saved looks persist `p.x`/`p.y` from state, not local Animated offsets.
 - `saveFailed` from `useCloset` drives the persistence-failure banner in App; keep surfacing it.
-- Item ids use `${Date.now()}-${index}` for batch adds — never plain Date.now() (collides within one batch).
+- Batch-add item ids use `${Date.now()}-${index}` (useCloset.addItem); canvas instance ids use module-scope `nextInstanceId()` counter — never plain Date.now() (collides within one batch).
 
 ## Conventions
 
-- Palettes: light = background `#F7F4EE`, ink `#24231F`, muted `#9B958A`, sage `#C8D7C0`/ink `#30432E`, terracotta `#B86C5E`; dark variants in theme.ts.
-- Styles: each component owns a `makeStyles(c)` returning `StyleSheet.create` with dense entries.
-- UI text tone: short, warm, lowercase-ish elegance ("Add a piece", "An empty closet awaits").
-- Haptics: selectionAsync on favorite toggle, impact Medium on FAB, success notification after save.
+- Palettes ("Haute Editorial"): light = silk cream surface `#FAF7F2`, espresso ink `#171614`, champagne gold `#C49B4B`; dark = obsidian `#111114` w/ pale gold `#E6C594`; full tokens in theme.tsx.
+- Styles: each component owns a `makeStyles(c)` returning `StyleSheet.create` with dense entries; OutfitCanvas also has a static module-level sheet for per-piece internals that don't depend on theme.
+- UI text tone: short, warm, editorial elegance ("An empty atelier awaits", "Save Styled Look").
+- Haptics: selectionAsync on favorite/category toggles, impact Light/Medium on buttons and gestures, Heavy before destructive confirm, success notification after save/shuffle.
 - No comments in code unless asked.

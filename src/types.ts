@@ -16,16 +16,6 @@ export type Item = {
   season?: Season;
 };
 
-export type CanvasPiece = {
-  instanceId: string;
-  item: Item;
-  x: number;
-  y: number;
-  scale: number;
-  rotation: number;
-  zIndex: number;
-};
-
 export type SavedOutfit = {
   id: string;
   name: string;
@@ -45,13 +35,5 @@ export type NewItemDraft = {
   photoUris: string[];
   name: string;
   category: ClothingCategory;
-  season?: Season;
-};
-
-export type EditItemDraft = {
-  id: string;
-  name: string;
-  category: ClothingCategory;
-  photoUri: string | null;
   season?: Season;
 };

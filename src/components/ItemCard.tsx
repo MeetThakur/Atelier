@@ -23,7 +23,6 @@ export const ItemCard = memo(function ItemCard({
   const styles = makeStyles(c);
 
   const lastTapRef = useRef<number>(0);
-  const singleTapTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Animated heart pop on double tap
   const heartScale = useRef(new Animated.Value(0)).current;
@@ -51,35 +50,29 @@ export const ItemCard = memo(function ItemCard({
     });
   };
 
-  const handleTap = () => {
+  const handleCardPress = () => {
     const now = Date.now();
     const DOUBLE_TAP_DELAY = 280;
 
     if (now - lastTapRef.current < DOUBLE_TAP_DELAY) {
-      // Double Tap detected!
-      if (singleTapTimeoutRef.current) {
-        clearTimeout(singleTapTimeoutRef.current);
-        singleTapTimeoutRef.current = null;
-      }
+      // Double Tap detected -> trigger animated heart!
       lastTapRef.current = 0;
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       triggerHeartAnimation();
       onToggleFavorite(item.id);
     } else {
-      // First tap, queue single tap for card expansion
       lastTapRef.current = now;
-      singleTapTimeoutRef.current = setTimeout(() => {
-        onPress();
-        singleTapTimeoutRef.current = null;
-      }, DOUBLE_TAP_DELAY);
+      onPress();
     }
   };
 
+  const handleFavoritePress = () => {
+    void Haptics.selectionAsync();
+    triggerHeartAnimation();
+    onToggleFavorite(item.id);
+  };
+
   const handleLongPress = () => {
-    if (singleTapTimeoutRef.current) {
-      clearTimeout(singleTapTimeoutRef.current);
-      singleTapTimeoutRef.current = null;
-    }
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     onOpenMenu();
   };
@@ -102,7 +95,7 @@ export const ItemCard = memo(function ItemCard({
 
   return (
     <Pressable
-      onPress={handleTap}
+      onPress={handleCardPress}
       onLongPress={handleLongPress}
       delayLongPress={350}
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
@@ -127,12 +120,25 @@ export const ItemCard = memo(function ItemCard({
           <Ionicons name="heart" size={64} color="#E0534C" style={styles.heartForeground} />
         </Animated.View>
 
-        {/* Subtle frosted corner favorite dot when favorited */}
-        {item.favorite && (
-          <View style={styles.cornerFavoriteDot}>
-            <Ionicons name="heart" size={12} color="#E0534C" />
-          </View>
-        )}
+        {/* Corner Favorite Button Indicator */}
+        <Pressable
+          onPress={(e) => {
+            e.stopPropagation();
+            handleFavoritePress();
+          }}
+          hitSlop={8}
+          style={({ pressed }) => [
+            styles.cornerFavoriteBtn,
+            item.favorite && styles.cornerFavoriteBtnActive,
+            pressed && styles.btnPressed,
+          ]}
+        >
+          <Ionicons
+            name={item.favorite ? 'heart' : 'heart-outline'}
+            size={13}
+            color={item.favorite ? '#E0534C' : c.onSurfaceVariant}
+          />
+        </Pressable>
       </View>
 
       {(hasCustomName || hasSeason) && (
@@ -184,8 +190,9 @@ const makeStyles = (c: Palette) =>
       transform: [{ scale: 0.97 }],
     },
     imageWrap: {
-      height: 205,
       width: '100%',
+      aspectRatio: 3 / 4,
+      maxHeight: 220,
       backgroundColor: c.cardBg,
       position: 'relative',
       alignItems: 'center',
@@ -193,7 +200,8 @@ const makeStyles = (c: Palette) =>
       padding: 6,
     },
     imageWrapFull: {
-      height: 225,
+      aspectRatio: 3 / 4,
+      maxHeight: 235,
       padding: 8,
     },
     studioPedestal: {
@@ -223,14 +231,14 @@ const makeStyles = (c: Palette) =>
     heartForeground: {
       position: 'relative',
     },
-    cornerFavoriteDot: {
+    cornerFavoriteBtn: {
       position: 'absolute',
-      bottom: 12,
-      right: 12,
-      width: 24,
-      height: 24,
-      borderRadius: 12,
-      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+      bottom: 10,
+      right: 10,
+      width: 26,
+      height: 26,
+      borderRadius: 13,
+      backgroundColor: 'rgba(255, 255, 255, 0.92)',
       alignItems: 'center',
       justifyContent: 'center',
       shadowColor: '#000',
@@ -238,6 +246,15 @@ const makeStyles = (c: Palette) =>
       shadowRadius: 4,
       shadowOffset: { width: 0, height: 1 },
       elevation: 3,
+      borderWidth: 0.5,
+      borderColor: 'rgba(0, 0, 0, 0.06)',
+    },
+    cornerFavoriteBtnActive: {
+      backgroundColor: '#FFFFFF',
+    },
+    btnPressed: {
+      transform: [{ scale: 0.9 }],
+      opacity: 0.8,
     },
     infoArea: {
       paddingHorizontal: 14,

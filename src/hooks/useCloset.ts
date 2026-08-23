@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { EditItemDraft, Item, NewItemDraft } from '../types';
+import type { Item, NewItemDraft } from '../types';
 import { deleteStoredImage, storeImage } from '../lib/files';
 import { loadItems, saveItems } from '../lib/storage';
 
@@ -57,28 +57,6 @@ export function useCloset() {
     []
   );
 
-  const updateItem = useCallback(
-    async ({ id, name, category, photoUri, season }: EditItemDraft) => {
-      const patch = (item: Item): Item => ({
-        ...item,
-        name: name.trim() || 'Piece',
-        category,
-        season: season ?? item.season,
-      });
-      if (photoUri && photoUri.startsWith('file://')) {
-        const image = await storeImage(photoUri, id);
-        setItems((current) =>
-          current.map((item) => (item.id !== id ? item : { ...patch(item), image }))
-        );
-      } else {
-        setItems((current) =>
-          current.map((item) => (item.id !== id ? item : patch(item)))
-        );
-      }
-    },
-    []
-  );
-
   const removeItem = useCallback((item: Item) => {
     setItems((current) => current.filter((entry) => entry.id !== item.id));
     deleteStoredImage(item.image);
@@ -90,7 +68,6 @@ export function useCloset() {
     saveFailed,
     toggleFavorite,
     addItem,
-    updateItem,
     removeItem,
   };
 }

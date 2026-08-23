@@ -3,10 +3,8 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { ClothingCategory, Item, SavedOutfit, Season } from '../types';
-import { SEASON_ICONS, clothingCategories, seasons } from '../constants';
+import { OUTFITS_STORAGE_KEY, SEASON_ICONS, clothingCategories, seasons } from '../constants';
 import { useTheme, fonts, shapes, type Palette } from '../theme';
-
-const OUTFITS_STORAGE_KEY = '@atelier_saved_outfits_v1';
 
 const CATEGORY_ICONS: Record<ClothingCategory, keyof typeof Ionicons.glyphMap> = {
   Tops: 'shirt-outline',
@@ -76,22 +74,33 @@ export function StatsScreen({ items }: Props) {
   const shoesCount = categoryCounts.Shoes;
   const dressesCount = categoryCounts.Dresses;
 
-  const potentialLooks = (topsCount * bottomsCount * (shoesCount || 1)) + (dressesCount * (shoesCount || 1));
+  const potentialLooks =
+    topsCount * bottomsCount * (shoesCount || 1) + dressesCount * (shoesCount || 1);
 
-  // Dynamic Wardrobe Insight
+  // Dynamic Stylist Insight (adding qualitative context rather than repeating raw counts)
   let insightHeadline = 'Wardrobe in Inception';
-  let insightBody = 'Add more pieces to uncover your personal archive balance.';
+  let insightBody =
+    'Photograph tops, trousers, and shoes to uncover your personal archive balance and unlock pairing suggestions.';
 
-  if (totalItems >= 4) {
-    if (topsCount > 0 && bottomsCount > 0) {
-      insightHeadline = 'High Combinatorial Ratio';
-      insightBody = `With your current pieces, you can create up to ${potentialLooks} distinct outfit combinations!`;
-    } else if (topsCount > 0 && bottomsCount === 0) {
+  if (totalItems >= 1) {
+    if (shoesCount === 0 && (topsCount > 0 || bottomsCount > 0 || dressesCount > 0)) {
+      insightHeadline = 'Footwear Gap';
+      insightBody =
+        'Add a pair of shoes to your archive to unlock full head-to-toe 3-piece looks on the Studio Canvas.';
+    } else if (bottomsCount === 0 && topsCount > 0) {
       insightHeadline = 'Bottoms Needed';
-      insightBody = 'Curate trousers, skirts, or denim to unlock full styling versatility for your tops.';
-    } else if (bottomsCount > 0 && topsCount === 0) {
+      insightBody =
+        'Curate trousers, skirts, or denim to unlock full styling versatility for your tops.';
+    } else if (topsCount === 0 && bottomsCount > 0) {
       insightHeadline = 'Tops Needed';
-      insightBody = 'Add shirts, tees, or knits to pair with your bottoms.';
+      insightBody = 'Add shirts, knits, or tees to balance your bottom collection.';
+    } else if (topsCount > 0 && bottomsCount > 0) {
+      const dominantSeason = (Object.keys(seasonCounts) as Season[]).reduce((a, b) =>
+        seasonCounts[a] > seasonCounts[b] ? a : b
+      );
+      const ratio = `${topsCount}:${bottomsCount}`;
+      insightHeadline = 'Well-Balanced Capsule';
+      insightBody = `Your ${ratio} Tops-to-Bottoms ratio gives strong versatile layering. Your most represented season is ${dominantSeason}.`;
     }
   }
 
@@ -115,23 +124,34 @@ export function StatsScreen({ items }: Props) {
       <View style={styles.metricGrid}>
         <View style={styles.metricCard}>
           <View style={styles.metricIconCircle}>
-            <Ionicons name="shirt-outline" size={18} color={c.onSurface} />
+            <Ionicons name="shirt-outline" size={17} color={c.onSurface} />
           </View>
           <Text style={styles.metricNumber}>{totalItems}</Text>
           <Text style={styles.metricLabel}>Total Pieces</Text>
         </View>
 
         <View style={styles.metricCard}>
-          <View style={[styles.metricIconCircle, { backgroundColor: c.goldContainer }]}>
-            <Ionicons name="heart" size={18} color="#E0534C" />
+          <View
+            style={[
+              styles.metricIconCircle,
+              favoriteCount > 0 && { backgroundColor: c.goldContainer },
+            ]}
+          >
+            <Ionicons
+              name={favoriteCount > 0 ? 'heart' : 'heart-outline'}
+              size={17}
+              color={favoriteCount > 0 ? '#E0534C' : c.onSurfaceVariant}
+            />
           </View>
           <Text style={styles.metricNumber}>{favoriteCount}</Text>
-          <Text style={styles.metricLabel}>Favorites ({favoritePercent}%)</Text>
+          <Text style={styles.metricLabel}>
+            {favoriteCount > 0 ? `Favorites (${favoritePercent}%)` : 'Favorites (0%)'}
+          </Text>
         </View>
 
         <View style={styles.metricCard}>
-          <View style={styles.metricIconCircle}>
-            <Ionicons name="color-palette-outline" size={18} color={c.gold} />
+          <View style={[styles.metricIconCircle, { backgroundColor: c.goldContainer }]}>
+            <Ionicons name="bookmark-outline" size={17} color={c.gold} />
           </View>
           <Text style={styles.metricNumber}>{savedOutfitsCount}</Text>
           <Text style={styles.metricLabel}>Saved Outfits</Text>
@@ -139,7 +159,7 @@ export function StatsScreen({ items }: Props) {
 
         <View style={styles.metricCard}>
           <View style={styles.metricIconCircle}>
-            <Ionicons name="sparkles-outline" size={18} color={c.tertiary} />
+            <Ionicons name="sparkles-outline" size={17} color={c.gold} />
           </View>
           <Text style={styles.metricNumber}>{potentialLooks}</Text>
           <Text style={styles.metricLabel}>Potential Looks</Text>
@@ -150,7 +170,7 @@ export function StatsScreen({ items }: Props) {
       <View style={styles.insightCard}>
         <View style={styles.insightHeader}>
           <View style={styles.insightSparkle}>
-            <Ionicons name="sparkles" size={14} color={c.gold} />
+            <Ionicons name="sparkles" size={13} color={c.gold} />
           </View>
           <Text style={styles.insightKicker}>CURATION INSIGHT</Text>
         </View>
@@ -178,15 +198,17 @@ export function StatsScreen({ items }: Props) {
                 </View>
 
                 <View style={styles.progressTrack}>
-                  <View
-                    style={[
-                      styles.progressBar,
-                      {
-                        width: `${Math.max(percent, 4)}%`,
-                        backgroundColor: c.primary,
-                      },
-                    ]}
-                  />
+                  {count > 0 ? (
+                    <View
+                      style={[
+                        styles.progressBar,
+                        {
+                          width: `${Math.max(percent, 6)}%`,
+                          backgroundColor: c.primary,
+                        },
+                      ]}
+                    />
+                  ) : null}
                 </View>
 
                 <View style={styles.categoryCountWrap}>
@@ -203,7 +225,11 @@ export function StatsScreen({ items }: Props) {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Seasonal Coverage</Text>
 
-        <View style={styles.seasonGrid}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.seasonRowScroll}
+        >
           {seasons.map((s) => {
             const count = seasonCounts[s];
             const iconName = SEASON_ICONS[s];
@@ -216,7 +242,7 @@ export function StatsScreen({ items }: Props) {
               </View>
             );
           })}
-        </View>
+        </ScrollView>
       </View>
     </ScrollView>
   );
@@ -338,7 +364,7 @@ const makeStyles = (c: Palette) =>
     insightTitle: {
       fontFamily: fonts.displayBold,
       color: c.onPrimaryContainer,
-      fontSize: 17,
+      fontSize: 16.5,
       marginBottom: 4,
     },
     insightText: {
@@ -422,14 +448,12 @@ const makeStyles = (c: Palette) =>
       color: c.onSurfaceVariant,
       fontSize: 11,
     },
-    seasonGrid: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: 8,
+    seasonRowScroll: {
+      gap: 10,
+      paddingRight: 10,
     },
     seasonCard: {
-      flex: 1,
-      minWidth: '30%',
+      width: 104,
       backgroundColor: c.cardBg,
       borderRadius: shapes.lg,
       borderWidth: 1,
@@ -456,6 +480,6 @@ const makeStyles = (c: Palette) =>
     seasonCardName: {
       fontFamily: fonts.medium,
       color: c.onSurfaceVariant,
-      fontSize: 11,
+      fontSize: 11.5,
     },
   });

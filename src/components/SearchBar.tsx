@@ -18,7 +18,7 @@ export function SearchBar({ value, onChange }: Props) {
         autoFocus
         value={value}
         onChangeText={onChange}
-        placeholder="Search pieces, colors, seasons…"
+        placeholder="Search pieces, categories, seasons…"
         placeholderTextColor={c.onSurfaceVariant}
         style={styles.input}
         returnKeyType="search"

@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { FlatList, Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Animated, FlatList, Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
 import {
@@ -40,8 +40,6 @@ import { Ionicons } from '@expo/vector-icons';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
-const SORT_ORDER: SortMode[] = ['newest', 'favorites', 'name'];
-
 function AtelierApp() {
   const c = useTheme();
   const { isDark } = useThemeMode();
@@ -66,6 +64,25 @@ function AtelierApp() {
   const [actionSheetItem, setActionSheetItem] = useState<Item | null>(null);
   const [sortMode, setSortMode] = useState<SortMode>('newest');
 
+  // Smooth 150ms native tab crossfade
+  const tabFadeAnim = useRef(new Animated.Value(1)).current;
+
+  const handleTabChange = (nextTab: AppTab) => {
+    if (nextTab === activeTab) return;
+    Animated.timing(tabFadeAnim, {
+      toValue: 0,
+      duration: 65,
+      useNativeDriver: true,
+    }).start(() => {
+      setActiveTab(nextTab);
+      Animated.timing(tabFadeAnim, {
+        toValue: 1,
+        duration: 110,
+        useNativeDriver: true,
+      }).start();
+    });
+  };
+
   const categoryCounts = useMemo(() => {
     const counts: Record<Category, number> = {
       All: items.length,
@@ -83,13 +100,18 @@ function AtelierApp() {
   }, [items]);
 
   const visibleItems = useMemo(() => {
+    const q = query.trim().toLowerCase();
     let list = items.filter((item) => {
       const inCategory = category === 'All' || item.category === category;
       const inSeason =
         season === 'All' ||
         item.season === season ||
         (!item.season && season === 'All-Season');
-      const inQuery = item.name.toLowerCase().includes(query.toLowerCase());
+      const inQuery =
+        !q ||
+        item.name.toLowerCase().includes(q) ||
+        item.category.toLowerCase().includes(q) ||
+        (item.season || 'All-Season').toLowerCase().includes(q);
       return inCategory && inSeason && inQuery;
     });
 
@@ -113,12 +135,6 @@ function AtelierApp() {
     return items.find((i) => i.id === actionSheetItem.id) || actionSheetItem;
   }, [items, actionSheetItem]);
 
-  const cycleSortMode = () => {
-    const currentIndex = SORT_ORDER.indexOf(sortMode);
-    const nextIndex = (currentIndex + 1) % SORT_ORDER.length;
-    setSortMode(SORT_ORDER[nextIndex]);
-  };
-
   const clearAllFilters = () => {
     setQuery('');
     setCategory('All');
@@ -132,114 +148,116 @@ function AtelierApp() {
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
 
-      {activeTab === 'archive' && (
-        <View style={styles.container}>
-          {saveFailed && (
-            <View style={styles.errorBanner}>
-              <Text style={styles.errorBannerText}>
-                Changes could not be saved to device storage.
-              </Text>
-            </View>
-          )}
-
-          <Header
-            greeting={greeting()}
-            totalPieces={loaded ? items.length : null}
-            searchActive={searchOpen}
-            onToggleSearch={() => {
-              setSearchOpen((open) => {
-                if (open) setQuery('');
-                return !open;
-              });
-            }}
-          />
-
-          {searchOpen && <SearchBar value={query} onChange={setQuery} />}
-
-          <CategoryChips
-            value={category}
-            onChange={setCategory}
-            counts={loaded ? categoryCounts : undefined}
-          />
-
-          {/* Active Sub-Filter Badges */}
-          {activeFilterCount > 0 && (
-            <View style={styles.activeFiltersRow}>
-              {season !== 'All' && (
-                <Pressable
-                  onPress={() => setSeason('All')}
-                  style={styles.activeFilterPill}
-                >
-                  <Ionicons
-                    name={SEASON_ICONS[season] || 'sparkles-outline'}
-                    size={12}
-                    color={c.onPrimaryContainer}
-                  />
-                  <Text style={styles.activeFilterText}>{season}</Text>
-                  <Ionicons name="close" size={12} color={c.onPrimaryContainer} />
-                </Pressable>
-              )}
-
-              <Pressable onPress={() => setSeason('All')} style={styles.clearFiltersBtn}>
-                <Text style={styles.clearFiltersText}>Clear</Text>
-              </Pressable>
-            </View>
-          )}
-
-          <SectionHeader
-            title={category === 'All' ? 'Your pieces' : category}
-            count={visibleItems.length}
-            sortMode={sortMode}
-            onCycleSort={cycleSortMode}
-            activeFilterCount={activeFilterCount}
-            onOpenFilter={() => setFilterModalOpen(true)}
-          />
-
-          <FlatList
-            data={visibleItems}
-            numColumns={2}
-            keyExtractor={(item) => item.id}
-            columnWrapperStyle={styles.gridRow}
-            contentContainerStyle={styles.grid}
-            showsVerticalScrollIndicator={false}
-            ListEmptyComponent={
-              hasActiveFilters ? (
-                <EmptyState
-                  title="No pieces found"
-                  message="No pieces match your current filters."
-                  isFilterResult
-                  onAction={clearAllFilters}
-                  actionLabel="Clear all filters"
-                />
-              ) : (
-                <EmptyState
-                  title="An empty atelier awaits"
-                  message="Tap below to photograph your first piece."
-                  onAction={() => setModalOpen(true)}
-                  actionLabel="Add piece"
-                />
-              )
-            }
-            renderItem={({ item }) => (
-              <ItemCard
-                item={item}
-                onPress={() => setSelectedItem(item)}
-                onOpenMenu={() => setActionSheetItem(item)}
-                onToggleFavorite={toggleFavorite}
-              />
+      <Animated.View style={[styles.tabContentWrap, { opacity: tabFadeAnim }]}>
+        {activeTab === 'archive' && (
+          <View style={styles.container}>
+            {saveFailed && (
+              <View style={styles.errorBanner}>
+                <Text style={styles.errorBannerText}>
+                  Changes could not be saved to device storage.
+                </Text>
+              </View>
             )}
-          />
 
-          <Fab onPress={() => setModalOpen(true)} />
-        </View>
-      )}
+            <Header
+              greeting={greeting()}
+              totalPieces={loaded ? items.length : null}
+              searchActive={searchOpen}
+              onToggleSearch={() => {
+                setSearchOpen((open) => {
+                  if (open) setQuery('');
+                  return !open;
+                });
+              }}
+            />
 
-      {activeTab === 'canvas' && <OutfitCanvas items={items} />}
+            {searchOpen && <SearchBar value={query} onChange={setQuery} />}
 
-      {activeTab === 'stats' && <StatsScreen items={items} />}
+            <CategoryChips
+              value={category}
+              onChange={setCategory}
+              counts={loaded ? categoryCounts : undefined}
+            />
+
+            {/* Active Sub-Filter Badges */}
+            {activeFilterCount > 0 && (
+              <View style={styles.activeFiltersRow}>
+                {season !== 'All' && (
+                  <Pressable
+                    onPress={() => setSeason('All')}
+                    style={styles.activeFilterPill}
+                  >
+                    <Ionicons
+                      name={SEASON_ICONS[season] || 'sparkles-outline'}
+                      size={12}
+                      color={c.onPrimaryContainer}
+                    />
+                    <Text style={styles.activeFilterText}>{season}</Text>
+                    <Ionicons name="close" size={12} color={c.onPrimaryContainer} />
+                  </Pressable>
+                )}
+
+                <Pressable onPress={() => setSeason('All')} style={styles.clearFiltersBtn}>
+                  <Text style={styles.clearFiltersText}>Clear</Text>
+                </Pressable>
+              </View>
+            )}
+
+            <SectionHeader
+              title={category === 'All' ? 'Your pieces' : category}
+              count={visibleItems.length}
+              sortMode={sortMode}
+              onSortChange={setSortMode}
+              activeFilterCount={activeFilterCount}
+              onOpenFilter={() => setFilterModalOpen(true)}
+            />
+
+            <FlatList
+              data={visibleItems}
+              numColumns={2}
+              keyExtractor={(item) => item.id}
+              columnWrapperStyle={styles.gridRow}
+              contentContainerStyle={styles.grid}
+              showsVerticalScrollIndicator={false}
+              ListEmptyComponent={
+                hasActiveFilters ? (
+                  <EmptyState
+                    title="No pieces found"
+                    message="No pieces match your current filters."
+                    isFilterResult
+                    onAction={clearAllFilters}
+                    actionLabel="Clear all filters"
+                  />
+                ) : (
+                  <EmptyState
+                    title="An empty atelier awaits"
+                    message="Tap below to photograph your first piece."
+                    onAction={() => setModalOpen(true)}
+                    actionLabel="Add piece"
+                  />
+                )
+              }
+              renderItem={({ item }) => (
+                <ItemCard
+                  item={item}
+                  onPress={() => setSelectedItem(item)}
+                  onOpenMenu={() => setActionSheetItem(item)}
+                  onToggleFavorite={toggleFavorite}
+                />
+              )}
+            />
+
+            <Fab onPress={() => setModalOpen(true)} />
+          </View>
+        )}
+
+        {activeTab === 'canvas' && <OutfitCanvas items={items} />}
+
+        {activeTab === 'stats' && <StatsScreen items={items} />}
+      </Animated.View>
 
       {/* Floating Bottom Nav */}
-      <BottomNavBar activeTab={activeTab} onTabChange={setActiveTab} />
+      <BottomNavBar activeTab={activeTab} onTabChange={handleTabChange} />
 
       <AddItemModal
         visible={modalOpen}
@@ -326,6 +344,9 @@ const makeStyles = (c: Palette) =>
       flex: 1,
       backgroundColor: c.surface,
     },
+    tabContentWrap: {
+      flex: 1,
+    },
     container: {
       flex: 1,
       paddingHorizontal: 18,
@@ -348,7 +369,7 @@ const makeStyles = (c: Palette) =>
       justifyContent: 'space-between',
     },
     grid: {
-      paddingBottom: 72,
+      paddingBottom: 110,
     },
     activeFiltersRow: {
       flexDirection: 'row',

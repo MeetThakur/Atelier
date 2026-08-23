@@ -5,8 +5,6 @@ export const greeting = () => {
   return 'Good evening';
 };
 
-export const todayISO = () => new Date().toISOString().slice(0, 10);
-
 export const formatHeaderDate = () => {
   return new Intl.DateTimeFormat('en-US', {
     weekday: 'short',

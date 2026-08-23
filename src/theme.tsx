@@ -155,17 +155,17 @@ const ThemeContext = createContext<ThemeContextValue>({
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const systemScheme = useColorScheme();
   const [mode, setModeState] = useState<ThemeMode>('light');
+  const [resolved, setResolved] = useState(false);
 
   useEffect(() => {
     AsyncStorage.getItem(THEME_STORAGE_KEY)
       .then((saved) => {
         if (saved === 'light' || saved === 'dark' || saved === 'system') {
           setModeState(saved);
-        } else {
-          setModeState('light');
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setResolved(true));
   }, []);
 
   const setMode = (newMode: ThemeMode) => {
@@ -179,6 +179,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const toggleTheme = () => {
     setMode(isDark ? 'light' : 'dark');
   };
+
+  if (!resolved) return null;
 
   return (
     <ThemeContext.Provider value={{ palette, mode, isDark, setMode, toggleTheme }}>

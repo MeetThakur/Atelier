@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -33,7 +33,11 @@ const CATEGORY_ICONS: Record<ClothingCategory, keyof typeof Ionicons.glyphMap> =
   Shoes: 'footsteps-outline',
 };
 
-export function AddItemModal({ visible, onClose, onAdd }: Props) {
+export function AddItemModal(props: Props) {
+  return <AddItemSheet key={props.visible ? 'open' : 'closed'} {...props} />;
+}
+
+function AddItemSheet({ visible, onClose, onAdd }: Props) {
   const c = useTheme();
   const styles = makeStyles(c);
 
@@ -42,16 +46,6 @@ export function AddItemModal({ visible, onClose, onAdd }: Props) {
   const [season, setSeason] = useState<Season>('All-Season');
   const [photoUris, setPhotoUris] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    if (!visible) {
-      setName('');
-      setCategory('Tops');
-      setSeason('All-Season');
-      setPhotoUris([]);
-      setSaving(false);
-    }
-  }, [visible]);
 
   const handleCamera = async () => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
