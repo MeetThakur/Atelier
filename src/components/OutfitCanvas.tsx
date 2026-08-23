@@ -30,10 +30,10 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 type CanvasBackdrop = 'silk' | 'linen' | 'grid' | 'noir';
 
 const BACKDROP_LABELS: Record<CanvasBackdrop, string> = {
-  silk: 'Studio Silk',
-  linen: 'Warm Linen',
-  grid: 'Architectural Grid',
-  noir: 'Editorial Noir',
+  silk: 'Silk',
+  linen: 'Linen',
+  grid: 'Grid',
+  noir: 'Noir',
 };
 
 let instanceSeq = 0;
@@ -295,7 +295,6 @@ export function OutfitCanvas({ items }: Props) {
   const [outfitName, setOutfitName] = useState('');
   const [lastRemovedPiece, setLastRemovedPiece] = useState<CanvasPieceData | null>(null);
   const [backdrop, setBackdrop] = useState<CanvasBackdrop>('silk');
-  const [backdropToast, setBackdropToast] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [exportedImageUri, setExportedImageUri] = useState<string | null>(null);
   const [showExportModal, setShowExportModal] = useState(false);
@@ -304,7 +303,6 @@ export function OutfitCanvas({ items }: Props) {
   const canvasRef = useRef<View>(null);
   const nextZIndex = useRef(10);
   const undoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Global 2-finger pinch tracker for the entire canvas board
   const canvasPinchDistRef = useRef<number | null>(null);
@@ -469,17 +467,10 @@ export function OutfitCanvas({ items }: Props) {
   const handleCycleBackdrop = () => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setBackdrop((current) => {
-      let next: CanvasBackdrop = 'silk';
-      if (current === 'silk') next = 'linen';
-      else if (current === 'linen') next = 'grid';
-      else if (current === 'grid') next = 'noir';
-      else next = 'silk';
-
-      setBackdropToast(BACKDROP_LABELS[next]);
-      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
-      toastTimeoutRef.current = setTimeout(() => setBackdropToast(null), 2000);
-
-      return next;
+      if (current === 'silk') return 'linen';
+      if (current === 'linen') return 'grid';
+      if (current === 'grid') return 'noir';
+      return 'silk';
     });
   };
 
@@ -681,105 +672,51 @@ export function OutfitCanvas({ items }: Props) {
 
   return (
     <View style={styles.container}>
-      {/* Top Studio Toolbar */}
-      <View style={styles.topToolbar}>
-        <View style={styles.toolbarLeft}>
-          <Text style={styles.canvasTitle}>Studio Canvas</Text>
-          <Text style={styles.canvasSubtitle} numberOfLines={1}>
-            Pinch with 2 fingers to expand & shrink
-          </Text>
+      {/* Top Header: Clean, Uncluttered Editorial Bar */}
+      <View style={styles.topHeader}>
+        <View style={styles.headerLeft}>
+          <Text style={styles.canvasTitle}>Studio</Text>
+          <View style={styles.pieceCountPill}>
+            <Text style={styles.pieceCountPillText}>
+              {canvasPieces.length === 1 ? '1 piece' : `${canvasPieces.length} pieces`}
+            </Text>
+          </View>
         </View>
 
-        <View style={styles.toolbarRight}>
-          {/* Backdrop Switcher */}
-          <Pressable
-            onPress={handleCycleBackdrop}
-            hitSlop={8}
-            style={({ pressed }) => [styles.toolBtn, pressed && styles.pressed]}
-          >
-            <Ionicons
-              name={
-                backdrop === 'grid'
-                  ? 'grid'
-                  : backdrop === 'linen'
-                  ? 'color-filter'
-                  : backdrop === 'noir'
-                  ? 'contrast'
-                  : 'color-wand-outline'
-              }
-              size={17}
-              color={c.onSurface}
-            />
-          </Pressable>
-
-          {/* Export & Share */}
-          <Pressable
-            onPress={handleExportAndShare}
-            hitSlop={8}
-            style={({ pressed }) => [
-              styles.toolBtn,
-              canvasPieces.length === 0 && styles.toolBtnDisabled,
-              pressed && styles.pressed,
-            ]}
-          >
-            {isExporting ? (
-              <ActivityIndicator size="small" color={c.gold} />
-            ) : (
-              <Ionicons name="share-social-outline" size={17} color={c.onSurface} />
-            )}
-          </Pressable>
-
-          {/* Smart Shuffle */}
-          <Pressable
-            onPress={handleShuffle}
-            hitSlop={8}
-            style={({ pressed }) => [styles.toolBtn, pressed && styles.pressed]}
-          >
-            <Ionicons name="shuffle-outline" size={17} color={c.onSurface} />
-          </Pressable>
-
-          {/* Saved Outfits */}
+        <View style={styles.headerRight}>
+          {/* Saved Looks Action */}
           <Pressable
             onPress={() => setShowSavedModal(true)}
             hitSlop={8}
-            style={({ pressed }) => [styles.toolBtn, pressed && styles.pressed]}
+            style={({ pressed }) => [styles.headerBtn, pressed && styles.pressed]}
           >
             <Ionicons name="bookmark-outline" size={17} color={c.onSurface} />
+            <Text style={styles.headerBtnLabel}>Looks</Text>
             {savedOutfits.length > 0 && (
-              <View style={styles.savedCountDot}>
-                <Text style={styles.savedCountText}>{savedOutfits.length}</Text>
+              <View style={styles.savedBadge}>
+                <Text style={styles.savedBadgeText}>{savedOutfits.length}</Text>
               </View>
             )}
           </Pressable>
 
-          {/* Save Look CTA */}
+          {/* Share / Export Action */}
           <Pressable
-            onPress={() => {
-              if (canvasPieces.length > 0) {
-                setShowSavePrompt(true);
-              }
-            }}
+            onPress={handleExportAndShare}
             hitSlop={8}
             style={({ pressed }) => [
-              styles.toolBtn,
-              canvasPieces.length === 0 && styles.toolBtnDisabled,
+              styles.headerShareBtn,
+              canvasPieces.length === 0 && styles.headerShareBtnDisabled,
               pressed && styles.pressed,
             ]}
           >
-            <Ionicons name="checkmark-done" size={17} color={c.gold} />
-          </Pressable>
-
-          {/* Clear Board */}
-          <Pressable
-            onPress={handleClear}
-            hitSlop={8}
-            style={({ pressed }) => [
-              styles.toolBtn,
-              canvasPieces.length === 0 && styles.toolBtnDisabled,
-              pressed && styles.pressed,
-            ]}
-          >
-            <Ionicons name="trash-outline" size={17} color={c.error} />
+            {isExporting ? (
+              <ActivityIndicator size="small" color={c.onPrimary} />
+            ) : (
+              <>
+                <Ionicons name="share-social" size={15} color={c.onPrimary} />
+                <Text style={styles.headerShareBtnText}>Export</Text>
+              </>
+            )}
           </Pressable>
         </View>
       </View>
@@ -796,6 +733,70 @@ export function OutfitCanvas({ items }: Props) {
         ]}
         {...canvasBoardResponder.panHandlers}
       >
+        {/* Floating Studio Quick-Tools Pill Dock */}
+        <View style={styles.floatingDock}>
+          {/* Shuffle Tool */}
+          <Pressable
+            onPress={handleShuffle}
+            hitSlop={6}
+            style={({ pressed }) => [styles.dockActionBtn, pressed && styles.dockActionBtnPressed]}
+          >
+            <Ionicons name="shuffle-outline" size={15} color={c.onSurface} />
+            <Text style={styles.dockActionText}>Shuffle</Text>
+          </Pressable>
+
+          <View style={styles.dockDivider} />
+
+          {/* Backdrop Switcher */}
+          <Pressable
+            onPress={handleCycleBackdrop}
+            hitSlop={6}
+            style={({ pressed }) => [styles.dockActionBtn, pressed && styles.dockActionBtnPressed]}
+          >
+            <Ionicons
+              name={
+                backdrop === 'grid'
+                  ? 'grid-outline'
+                  : backdrop === 'linen'
+                  ? 'color-filter-outline'
+                  : backdrop === 'noir'
+                  ? 'contrast-outline'
+                  : 'color-wand-outline'
+              }
+              size={15}
+              color={c.gold}
+            />
+            <Text style={styles.dockActionText}>{BACKDROP_LABELS[backdrop]}</Text>
+          </Pressable>
+
+          {canvasPieces.length > 0 && (
+            <>
+              <View style={styles.dockDivider} />
+
+              {/* Save Look Button */}
+              <Pressable
+                onPress={() => setShowSavePrompt(true)}
+                hitSlop={6}
+                style={({ pressed }) => [styles.dockSaveBtn, pressed && styles.pressed]}
+              >
+                <Ionicons name="checkmark-done" size={15} color="#FFFFFF" />
+                <Text style={styles.dockSaveBtnText}>Save</Text>
+              </Pressable>
+
+              <View style={styles.dockDivider} />
+
+              {/* Clear Board */}
+              <Pressable
+                onPress={handleClear}
+                hitSlop={6}
+                style={({ pressed }) => [styles.dockClearBtn, pressed && styles.pressed]}
+              >
+                <Ionicons name="trash-outline" size={15} color={c.error} />
+              </Pressable>
+            </>
+          )}
+        </View>
+
         {/* Architectural Grid Overlay */}
         {backdrop === 'grid' && (
           <View style={styles.gridOverlay} pointerEvents="none">
@@ -808,13 +809,6 @@ export function OutfitCanvas({ items }: Props) {
           </View>
         )}
 
-        {/* Backdrop Mode Toast */}
-        {backdropToast && (
-          <View style={styles.backdropToastWrap} pointerEvents="none">
-            <Text style={styles.backdropToastText}>{backdropToast}</Text>
-          </View>
-        )}
-
         <Pressable
           style={StyleSheet.absoluteFill}
           onPress={() => setSelectedInstanceId(null)}
@@ -822,11 +816,11 @@ export function OutfitCanvas({ items }: Props) {
           {canvasPieces.length === 0 ? (
             <View style={styles.emptyCanvasHint}>
               <View style={styles.hintIconCircle}>
-                <Ionicons name="finger-print-outline" size={28} color={c.gold} />
+                <Ionicons name="sparkles-outline" size={26} color={c.gold} />
               </View>
-              <Text style={styles.hintTitle}>Interactive Lookbook Studio</Text>
+              <Text style={styles.hintTitle}>Atelier Lookbook Studio</Text>
               <Text style={styles.hintText}>
-                Tap pieces below to add cutouts. Drag anywhere, pinch with 2 fingers to expand & shrink, and tap share to export your lookbook.
+                Select pieces from the wardrobe tray below. Drag anywhere & pinch with 2 fingers to resize.
               </Text>
             </View>
           ) : (
@@ -1062,7 +1056,7 @@ export function OutfitCanvas({ items }: Props) {
                       <View style={styles.savedOutfitActions}>
                         <Pressable
                           onPress={() => handleLoadOutfit(outfit)}
-                          style={[styles.loadOutfitBtn, validPieces.length === 0 && styles.toolBtnDisabled]}
+                          style={[styles.loadOutfitBtn, validPieces.length === 0 && styles.headerShareBtnDisabled]}
                         >
                           <Text style={styles.loadOutfitBtnText}>Load</Text>
                         </Pressable>
@@ -1131,54 +1125,62 @@ const makeStyles = (c: Palette) =>
       flex: 1,
       backgroundColor: c.surface,
     },
-    topToolbar: {
+    topHeader: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
       paddingHorizontal: 18,
-      paddingTop: 14,
-      paddingBottom: 10,
+      paddingTop: 12,
+      paddingBottom: 12,
       borderBottomWidth: 1,
       borderBottomColor: c.outlineVariant,
+      backgroundColor: c.surface,
     },
-    toolbarLeft: {
-      flex: 1,
-      marginRight: 10,
+    headerLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
     },
     canvasTitle: {
       fontFamily: fonts.displayBold,
       color: c.onSurface,
-      fontSize: 22,
-      letterSpacing: -0.3,
+      fontSize: 24,
+      letterSpacing: -0.4,
     },
-    canvasSubtitle: {
+    pieceCountPill: {
+      backgroundColor: c.surfaceContainerHigh,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: shapes.full,
+    },
+    pieceCountPillText: {
       fontFamily: fonts.medium,
       color: c.onSurfaceVariant,
-      fontSize: 11.5,
+      fontSize: 11,
     },
-    toolbarRight: {
+    headerRight: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 7,
+      gap: 8,
     },
-    toolBtn: {
-      width: 36,
+    headerBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
       height: 36,
+      paddingHorizontal: 12,
       borderRadius: shapes.full,
-      backgroundColor: c.cardBg,
+      backgroundColor: c.surfaceContainerHigh,
       borderWidth: 1,
       borderColor: c.outlineVariant,
-      alignItems: 'center',
-      justifyContent: 'center',
       position: 'relative',
     },
-    toolBtnDisabled: {
-      opacity: 0.35,
+    headerBtnLabel: {
+      fontFamily: fonts.semiBold,
+      color: c.onSurface,
+      fontSize: 12.5,
     },
-    savedCountDot: {
-      position: 'absolute',
-      top: -2,
-      right: -2,
+    savedBadge: {
       backgroundColor: c.gold,
       borderRadius: 7,
       minWidth: 14,
@@ -1186,11 +1188,29 @@ const makeStyles = (c: Palette) =>
       alignItems: 'center',
       justifyContent: 'center',
       paddingHorizontal: 3,
+      marginLeft: 2,
     },
-    savedCountText: {
+    savedBadgeText: {
       fontFamily: fonts.extraBold,
       color: '#FFFFFF',
       fontSize: 8.5,
+    },
+    headerShareBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+      height: 36,
+      paddingHorizontal: 14,
+      borderRadius: shapes.full,
+      backgroundColor: c.primary,
+    },
+    headerShareBtnDisabled: {
+      opacity: 0.4,
+    },
+    headerShareBtnText: {
+      fontFamily: fonts.bold,
+      color: c.onPrimary,
+      fontSize: 12.5,
     },
     canvasBoard: {
       flex: 1,
@@ -1206,6 +1226,65 @@ const makeStyles = (c: Palette) =>
     },
     canvasBoardGrid: {
       backgroundColor: c.surface,
+    },
+    floatingDock: {
+      position: 'absolute',
+      top: 14,
+      alignSelf: 'center',
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: c.cardBg,
+      borderRadius: shapes.full,
+      paddingVertical: 5,
+      paddingHorizontal: 10,
+      borderWidth: 1,
+      borderColor: c.outlineVariant,
+      zIndex: 100,
+      shadowColor: '#000',
+      shadowOpacity: 0.08,
+      shadowRadius: 8,
+      shadowOffset: { width: 0, height: 2 },
+      elevation: 4,
+    },
+    dockActionBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+      paddingHorizontal: 8,
+      paddingVertical: 5,
+      borderRadius: shapes.full,
+    },
+    dockActionBtnPressed: {
+      backgroundColor: c.surfaceContainerHigh,
+    },
+    dockActionText: {
+      fontFamily: fonts.bold,
+      color: c.onSurface,
+      fontSize: 12,
+    },
+    dockDivider: {
+      width: 1,
+      height: 14,
+      backgroundColor: c.outlineVariant,
+      marginHorizontal: 4,
+    },
+    dockSaveBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      backgroundColor: c.gold,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: shapes.full,
+    },
+    dockSaveBtnText: {
+      fontFamily: fonts.bold,
+      color: '#FFFFFF',
+      fontSize: 11.5,
+    },
+    dockClearBtn: {
+      paddingHorizontal: 6,
+      paddingVertical: 5,
     },
     gridOverlay: {
       ...StyleSheet.absoluteFill,
@@ -1270,22 +1349,6 @@ const makeStyles = (c: Palette) =>
       borderRightWidth: 1.5,
       borderColor: c.gold,
     },
-    backdropToastWrap: {
-      position: 'absolute',
-      top: 14,
-      alignSelf: 'center',
-      backgroundColor: 'rgba(18, 16, 14, 0.82)',
-      borderRadius: shapes.full,
-      paddingHorizontal: 14,
-      paddingVertical: 5,
-      zIndex: 100,
-    },
-    backdropToastText: {
-      fontFamily: fonts.bold,
-      color: '#FFFFFF',
-      fontSize: 11.5,
-      letterSpacing: 0.5,
-    },
     emptyCanvasHint: {
       flex: 1,
       alignItems: 'center',
@@ -1293,13 +1356,13 @@ const makeStyles = (c: Palette) =>
       paddingHorizontal: 40,
     },
     hintIconCircle: {
-      width: 64,
-      height: 64,
-      borderRadius: 32,
+      width: 58,
+      height: 58,
+      borderRadius: 29,
       backgroundColor: c.goldContainer,
       alignItems: 'center',
       justifyContent: 'center',
-      marginBottom: 14,
+      marginBottom: 12,
     },
     hintTitle: {
       fontFamily: fonts.displayBold,
