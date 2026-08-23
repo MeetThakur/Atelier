@@ -683,27 +683,18 @@ export function OutfitCanvas({ items }: Props) {
 
   return (
     <View style={styles.container}>
-      {/* Top Header: Clean, Uncluttered Editorial Bar */}
+      {/* Top Header: Clean Minimalist Editorial Bar */}
       <View style={styles.topHeader}>
         <View style={styles.headerLeft}>
           <Text style={styles.canvasTitle}>Studio</Text>
           {canvasPieces.length > 0 && (
             <Text style={styles.canvasSubtitle}>
-              {canvasPieces.length} {canvasPieces.length === 1 ? 'piece' : 'pieces'} styled
+              {canvasPieces.length} {canvasPieces.length === 1 ? 'piece' : 'pieces'}
             </Text>
           )}
         </View>
 
         <View style={styles.headerRight}>
-          {/* Shuffle Tool */}
-          <Pressable
-            onPress={handleShuffle}
-            hitSlop={6}
-            style={({ pressed }) => [styles.headerIconBtn, pressed && styles.pressed]}
-          >
-            <Ionicons name="shuffle-outline" size={17} color={c.onSurface} />
-          </Pressable>
-
           {/* Backdrop Atmosphere Selector */}
           <Pressable
             onPress={() => setShowBackdropModal(true)}
@@ -749,7 +740,7 @@ export function OutfitCanvas({ items }: Props) {
               <ActivityIndicator size="small" color={c.onPrimary} />
             ) : (
               <>
-                <Ionicons name="share-social" size={14} color={c.onPrimary} />
+                <Ionicons name="share-social" size={13} color={c.onPrimary} />
                 <Text style={styles.headerShareBtnText}>Export</Text>
               </>
             )}
@@ -812,6 +803,28 @@ export function OutfitCanvas({ items }: Props) {
           )}
         </Pressable>
 
+        {/* Floating Quick Shuffle / Clear Corner Dock */}
+        {!isExporting && (
+          <View style={styles.canvasCornerDock}>
+            <Pressable
+              onPress={handleShuffle}
+              hitSlop={6}
+              style={({ pressed }) => [styles.cornerDockBtn, pressed && styles.pressed]}
+            >
+              <Ionicons name="shuffle" size={15} color={c.onSurface} />
+            </Pressable>
+            {canvasPieces.length > 0 && (
+              <Pressable
+                onPress={handleClear}
+                hitSlop={6}
+                style={({ pressed }) => [styles.cornerDockBtn, pressed && styles.pressed]}
+              >
+                <Ionicons name="trash-outline" size={15} color={c.error} />
+              </Pressable>
+            )}
+          </View>
+        )}
+
         {/* Undo Floating Banner (Hidden when exporting/sharing) */}
         {!isExporting && lastRemovedPiece && (
           <View style={styles.undoBanner}>
@@ -832,73 +845,64 @@ export function OutfitCanvas({ items }: Props) {
             hitSlop={8}
           >
             <View style={styles.drawerHandle} />
-            <Text style={styles.drawerTitle}>Pieces ({filteredDrawerItems.length})</Text>
           </Pressable>
-
-          {canvasPieces.length > 0 && (
-            <View style={styles.drawerActions}>
-              <Pressable
-                onPress={() => setShowSavePrompt(true)}
-                hitSlop={6}
-                style={({ pressed }) => [styles.drawerSaveBtn, pressed && styles.pressed]}
-              >
-                <Ionicons name="bookmark" size={13} color={c.gold} />
-                <Text style={styles.drawerSaveText}>Save Look</Text>
-              </Pressable>
-
-              <Pressable
-                onPress={handleClear}
-                hitSlop={6}
-                style={({ pressed }) => [styles.drawerClearBtn, pressed && styles.pressed]}
-              >
-                <Ionicons name="trash-outline" size={14} color={c.error} />
-              </Pressable>
-            </View>
-          )}
         </View>
 
         {drawerExpanded && (
           <>
-            {/* Category Filter Chips */}
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.drawerCategoryRow}
-            >
-              {categories.map((cat) => {
-                const isSelected = drawerCategory === cat;
-                const dotColor = {
-                  All: c.gold,
-                  Tops: c.catTops,
-                  Bottoms: c.catBottoms,
-                  Dresses: c.catDresses,
-                  Shoes: c.catShoes,
-                  Accessories: c.catAccessories,
-                }[cat];
+            {/* Category Filter Chips & Quick Save */}
+            <View style={styles.drawerControlRow}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.drawerCategoryRow}
+              >
+                {categories.map((cat) => {
+                  const isSelected = drawerCategory === cat;
+                  const dotColor = {
+                    All: c.gold,
+                    Tops: c.catTops,
+                    Bottoms: c.catBottoms,
+                    Dresses: c.catDresses,
+                    Shoes: c.catShoes,
+                    Accessories: c.catAccessories,
+                  }[cat];
 
-                return (
-                  <Pressable
-                    key={cat}
-                    onPress={() => setDrawerCategory(cat)}
-                    hitSlop={4}
-                    style={[
-                      styles.drawerCatChip,
-                      isSelected && styles.drawerCatChipActive,
-                    ]}
-                  >
-                    <View style={[styles.drawerDot, { backgroundColor: dotColor }]} />
-                    <Text
+                  return (
+                    <Pressable
+                      key={cat}
+                      onPress={() => setDrawerCategory(cat)}
+                      hitSlop={4}
                       style={[
-                        styles.drawerCatText,
-                        isSelected && styles.drawerCatTextActive,
+                        styles.drawerCatChip,
+                        isSelected && styles.drawerCatChipActive,
                       ]}
                     >
-                      {cat}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
+                      <View style={[styles.drawerDot, { backgroundColor: dotColor }]} />
+                      <Text
+                        style={[
+                          styles.drawerCatText,
+                          isSelected && styles.drawerCatTextActive,
+                        ]}
+                      >
+                        {cat}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+
+              {canvasPieces.length > 0 && (
+                <Pressable
+                  onPress={() => setShowSavePrompt(true)}
+                  hitSlop={6}
+                  style={({ pressed }) => [styles.drawerSaveBtn, pressed && styles.pressed]}
+                >
+                  <Ionicons name="bookmark" size={12} color={c.gold} />
+                  <Text style={styles.drawerSaveText}>Save</Text>
+                </Pressable>
+              )}
+            </View>
 
             {/* Pieces Horizontal Tray */}
             <ScrollView
@@ -1487,34 +1491,51 @@ const makeStyles = (c: Palette) =>
     drawerCollapsed: {
       paddingBottom: 10,
     },
-    drawerHeader: {
+    canvasCornerDock: {
+      position: 'absolute',
+      bottom: 12,
+      right: 14,
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingHorizontal: 20,
-      paddingBottom: 8,
+      gap: 6,
+      backgroundColor: c.cardBg,
+      padding: 4,
+      borderRadius: shapes.full,
+      borderWidth: 1,
+      borderColor: c.outlineVariant,
+      shadowColor: '#000',
+      shadowOpacity: 0.1,
+      shadowRadius: 6,
+      shadowOffset: { width: 0, height: 2 },
+      elevation: 3,
+    },
+    cornerDockBtn: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: c.surfaceContainerHigh,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    drawerControlRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingRight: 14,
+    },
+    drawerHeader: {
+      alignItems: 'center',
+      paddingBottom: 4,
     },
     drawerToggle: {
-      flexDirection: 'row',
       alignItems: 'center',
-      gap: 8,
+      width: '100%',
     },
     drawerHandle: {
-      width: 24,
+      width: 28,
       height: 3.5,
       borderRadius: 2,
       backgroundColor: c.outlineVariant,
-    },
-    drawerTitle: {
-      fontFamily: fonts.bold,
-      color: c.onSurface,
-      fontSize: 13,
-      letterSpacing: 0.2,
-    },
-    drawerActions: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
+      marginBottom: 2,
     },
     drawerSaveBtn: {
       flexDirection: 'row',
