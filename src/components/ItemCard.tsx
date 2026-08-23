@@ -84,7 +84,13 @@ export const ItemCard = memo(function ItemCard({
     onOpenMenu();
   };
 
-  const hasCustomName = item.name !== item.category;
+  const displayName =
+    item.name === 'Tops' ||
+    item.name === 'Bottoms' ||
+    item.name === 'Dresses' ||
+    item.name === 'Shoes'
+      ? 'Piece'
+      : item.name;
 
   return (
     <Pressable
@@ -115,18 +121,15 @@ export const ItemCard = memo(function ItemCard({
       <View style={styles.infoArea}>
         <View style={styles.nameRow}>
           <Text style={styles.name} numberOfLines={1}>
-            {item.name}
+            {displayName}
           </Text>
           {item.favorite && (
             <Ionicons name="heart" size={14} color="#E0534C" style={styles.miniHeart} />
           )}
         </View>
 
-        <View style={styles.metaRow}>
-          <Text style={styles.subCategory}>
-            {hasCustomName ? item.category : item.season || 'All-Season'}
-          </Text>
-          {hasCustomName && item.season && item.season !== 'All-Season' && (
+        {item.season && item.season !== 'All-Season' && (
+          <View style={styles.metaRow}>
             <View style={styles.seasonBadge}>
               <Ionicons
                 name={SEASON_ICONS[item.season] || 'sparkles-outline'}
@@ -135,8 +138,8 @@ export const ItemCard = memo(function ItemCard({
               />
               <Text style={styles.seasonText}>{item.season}</Text>
             </View>
-          )}
-        </View>
+          </View>
+        )}
       </View>
     </Pressable>
   );
@@ -211,22 +214,17 @@ const makeStyles = (c: Palette) =>
     metaRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
-      marginTop: 3,
-    },
-    subCategory: {
-      fontFamily: fonts.medium,
-      color: c.onSurfaceVariant,
-      fontSize: 11.5,
+      justifyContent: 'flex-start',
+      marginTop: 4,
     },
     seasonBadge: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 3,
+      gap: 3.5,
     },
     seasonText: {
       fontFamily: fonts.medium,
       color: c.onSurfaceVariant,
-      fontSize: 10,
+      fontSize: 10.5,
     },
   });

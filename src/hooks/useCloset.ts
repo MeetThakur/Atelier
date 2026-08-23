@@ -37,8 +37,11 @@ export function useCloset() {
         photoUris.map(async (uri, index) => {
           const id = `${Date.now()}-${index}`;
           const image = uri.startsWith('file://') ? await storeImage(uri, id) : uri;
-          const label = baseName || category;
-          const finalName = index === 0 || !baseName ? label : `${label} ${index + 1}`;
+          const defaultLabel = 'Piece';
+          const finalName = baseName
+            ? (index === 0 ? baseName : `${baseName} ${index + 1}`)
+            : (photoUris.length > 1 ? `${defaultLabel} ${index + 1}` : defaultLabel);
+
           const item: Item = {
             id,
             name: finalName,
@@ -58,7 +61,7 @@ export function useCloset() {
     async ({ id, name, category, photoUri, season }: EditItemDraft) => {
       const patch = (item: Item): Item => ({
         ...item,
-        name: name.trim() || category,
+        name: name.trim() || 'Piece',
         category,
         season: season ?? item.season,
       });

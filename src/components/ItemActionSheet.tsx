@@ -49,7 +49,7 @@ export function ItemActionSheet({
 
   const handleDelete = () => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    Alert.alert('Remove Piece', `"${item.name}" will be deleted from your atelier.`, [
+    Alert.alert('Remove Piece', `"${displayName}" will be deleted from your atelier.`, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Remove',
@@ -61,6 +61,14 @@ export function ItemActionSheet({
       },
     ]);
   };
+
+  const displayName =
+    item.name === 'Tops' ||
+    item.name === 'Bottoms' ||
+    item.name === 'Dresses' ||
+    item.name === 'Shoes'
+      ? 'Piece'
+      : item.name;
 
   return (
     <Modal
@@ -80,14 +88,13 @@ export function ItemActionSheet({
             <Image source={{ uri: item.image }} style={styles.thumb} />
             <View style={styles.previewInfo}>
               <Text style={styles.pieceName} numberOfLines={1}>
-                {item.name}
+                {displayName}
               </Text>
-              <View style={styles.badgeRow}>
-                <Text style={styles.pieceCategory}>{item.category.toUpperCase()}</Text>
-                {item.season && (
-                  <Text style={styles.pieceSeason}>• {item.season}</Text>
-                )}
-              </View>
+              {item.season && item.season !== 'All-Season' && (
+                <View style={styles.badgeRow}>
+                  <Text style={styles.pieceSeason}>{item.season}</Text>
+                </View>
+              )}
             </View>
           </View>
 
@@ -207,16 +214,10 @@ const makeStyles = (c: Palette) =>
       alignItems: 'center',
       gap: 6,
     },
-    pieceCategory: {
-      fontFamily: fonts.bold,
-      color: c.tertiary,
-      fontSize: 11,
-      letterSpacing: 0.8,
-    },
     pieceSeason: {
       fontFamily: fonts.medium,
       color: c.onSurfaceVariant,
-      fontSize: 11.5,
+      fontSize: 12,
     },
     divider: {
       height: 1,

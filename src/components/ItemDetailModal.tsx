@@ -42,7 +42,7 @@ export function ItemDetailModal({
 
   const handleDeletePress = () => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    Alert.alert('Remove Piece', `"${item.name}" will be deleted from your atelier.`, [
+    Alert.alert('Remove Piece', `"${displayName}" will be deleted from your atelier.`, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Remove',
@@ -54,6 +54,14 @@ export function ItemDetailModal({
       },
     ]);
   };
+
+  const displayName =
+    item.name === 'Tops' ||
+    item.name === 'Bottoms' ||
+    item.name === 'Dresses' ||
+    item.name === 'Shoes'
+      ? 'Piece'
+      : item.name;
 
   return (
     <Modal
@@ -102,11 +110,8 @@ export function ItemDetailModal({
 
             {/* Information Section */}
             <View style={styles.infoContent}>
-              <View style={styles.categoryRow}>
-                <View style={styles.categoryPill}>
-                  <Text style={styles.categoryPillText}>{item.category.toUpperCase()}</Text>
-                </View>
-                {item.season && (
+              {item.season && item.season !== 'All-Season' && (
+                <View style={styles.seasonRow}>
                   <View style={styles.seasonPill}>
                     <Ionicons
                       name={SEASON_ICONS[item.season] || 'sparkles-outline'}
@@ -115,10 +120,10 @@ export function ItemDetailModal({
                     />
                     <Text style={styles.seasonPillText}>{item.season}</Text>
                   </View>
-                )}
-              </View>
+                </View>
+              )}
 
-              <Text style={styles.title}>{item.name}</Text>
+              <Text style={styles.title}>{displayName}</Text>
 
               {/* Actions Section */}
               <View style={styles.actionButtons}>
@@ -224,23 +229,10 @@ const makeStyles = (c: Palette) =>
     infoContent: {
       padding: 20,
     },
-    categoryRow: {
+    seasonRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 8,
-      marginBottom: 8,
-    },
-    categoryPill: {
-      backgroundColor: c.primary,
-      borderRadius: shapes.xs,
-      paddingHorizontal: 8,
-      paddingVertical: 3.5,
-    },
-    categoryPillText: {
-      fontFamily: fonts.bold,
-      color: c.onPrimary,
-      fontSize: 10,
-      letterSpacing: 0.8,
+      marginBottom: 10,
     },
     seasonPill: {
       flexDirection: 'row',
@@ -254,7 +246,7 @@ const makeStyles = (c: Palette) =>
     seasonPillText: {
       fontFamily: fonts.medium,
       color: c.onSurfaceVariant,
-      fontSize: 10.5,
+      fontSize: 11,
     },
     title: {
       fontFamily: fonts.displayBold,
