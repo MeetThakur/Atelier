@@ -1,4 +1,4 @@
-export type Category = 'All' | 'Tops' | 'Bottoms' | 'Dresses' | 'Shoes';
+export type Category = 'All' | 'Tops' | 'Bottoms' | 'Dresses' | 'Shoes' | 'Accessories';
 export type ClothingCategory = Exclude<Category, 'All'>;
 
 export type Season = 'All-Season' | 'Spring' | 'Summer' | 'Fall' | 'Winter';

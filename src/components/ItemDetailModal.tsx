@@ -42,11 +42,13 @@ export function ItemDetailModal({
     item.name === 'Bottoms' ||
     item.name === 'Dresses' ||
     item.name === 'Shoes' ||
+    item.name === 'Accessories' ||
     item.name.startsWith('Piece ') ||
     item.name.startsWith('Tops ') ||
     item.name.startsWith('Bottoms ') ||
     item.name.startsWith('Dresses ') ||
-    item.name.startsWith('Shoes ');
+    item.name.startsWith('Shoes ') ||
+    item.name.startsWith('Accessories ');
 
   const hasCustomName = !isGenericName;
 

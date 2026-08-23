@@ -31,6 +31,7 @@ const CATEGORY_ICONS: Record<ClothingCategory, keyof typeof Ionicons.glyphMap> =
   Bottoms: 'layers-outline',
   Dresses: 'sparkles-outline',
   Shoes: 'footsteps-outline',
+  Accessories: 'glasses-outline',
 };
 
 export function AddItemModal(props: Props) {

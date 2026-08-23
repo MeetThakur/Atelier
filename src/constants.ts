@@ -5,8 +5,8 @@ export const STORAGE_KEY = 'closet.items.v1';
 
 export const OUTFITS_STORAGE_KEY = '@atelier_saved_outfits_v1';
 
-export const categories: Category[] = ['All', 'Tops', 'Bottoms', 'Dresses', 'Shoes'];
-export const clothingCategories: ClothingCategory[] = ['Tops', 'Bottoms', 'Dresses', 'Shoes'];
+export const categories: Category[] = ['All', 'Tops', 'Bottoms', 'Dresses', 'Shoes', 'Accessories'];
+export const clothingCategories: ClothingCategory[] = ['Tops', 'Bottoms', 'Dresses', 'Shoes', 'Accessories'];
 
 export const seasons: Season[] = ['All-Season', 'Spring', 'Summer', 'Fall', 'Winter'];
 

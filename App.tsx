@@ -90,6 +90,7 @@ function AtelierApp() {
       Bottoms: 0,
       Dresses: 0,
       Shoes: 0,
+      Accessories: 0,
     };
     for (const item of items) {
       if (counts[item.category] !== undefined) {

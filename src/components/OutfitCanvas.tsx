@@ -448,6 +448,7 @@ export function OutfitCanvas({ items }: Props) {
     const bottoms = items.filter((i) => i.category === 'Bottoms');
     const shoes = items.filter((i) => i.category === 'Shoes');
     const dresses = items.filter((i) => i.category === 'Dresses');
+    const accessories = items.filter((i) => i.category === 'Accessories');
 
     const newPieces: CanvasPieceData[] = [];
     nextZIndex.current = 10;
@@ -498,6 +499,18 @@ export function OutfitCanvas({ items }: Props) {
         zIndex: 12,
         x: SCREEN_WIDTH / 2 - 62,
         y: 280,
+      });
+    }
+
+    if (accessories.length > 0 && Math.random() > 0.35) {
+      const acc = pickRandom(accessories);
+      newPieces.push({
+        instanceId: nextInstanceId(acc.id),
+        item: acc,
+        scale: 0.8,
+        zIndex: 13,
+        x: SCREEN_WIDTH / 2 + 15,
+        y: 45,
       });
     }
 

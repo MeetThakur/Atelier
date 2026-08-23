@@ -11,6 +11,7 @@ const CATEGORY_ICONS: Record<ClothingCategory, keyof typeof Ionicons.glyphMap> =
   Bottoms: 'layers-outline',
   Dresses: 'sparkles-outline',
   Shoes: 'footsteps-outline',
+  Accessories: 'glasses-outline',
 };
 
 type Props = {
@@ -44,6 +45,7 @@ export function StatsScreen({ items }: Props) {
     Bottoms: 0,
     Dresses: 0,
     Shoes: 0,
+    Accessories: 0,
   };
 
   for (const item of items) {
