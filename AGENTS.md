@@ -2,7 +2,7 @@
 
 ## What this is
 
-"Atelier" — a personal digital wardrobe app. Users photograph their clothes, organize them into categories and seasons, mark favorites, compose outfits on an interactive canvas, and view wardrobe analytics. Three-tab Expo app (Archive / Studio / Stats); all data stays on-device.
+"Atelier" — an editorial personal digital wardrobe & lookbook application. Users photograph clothing pieces, organize them across categories and seasons, mark favorites, compose outfits on an interactive multi-touch styling canvas, and view wardrobe analytics. Three-tab Expo app (Archive / Studio / Stats); all data stays strictly on-device.
 
 ## Stack & versions (do not drift)
 
@@ -25,15 +25,15 @@ npx expo install <pkg> # ALWAYS install RN/expo packages via this, never raw npm
 
 ## Architecture
 
-Modular layout under `src/`; `App.tsx` owns tab state + archive screen wiring; tabs render conditionally (`activeTab === 'archive' | 'canvas' | 'stats'`).
+Modular layout under `src/`; `App.tsx` owns tab state + archive screen wiring; tabs render conditionally with 150ms crossfades (`activeTab === 'archive' | 'canvas' | 'stats'`).
 
 ```
 App.tsx                  tab state, archive screen: filters/sort/modals + FlatList grid
 src/
   theme.tsx              ThemeProvider context; light/dark "Haute Editorial" palettes with gold
                          tokens; mode persisted (@atelier_theme_mode). ALL colors come from here.
-  types.ts               Category, ClothingCategory, Season, SortMode, AppTab, Item,
-                         SavedOutfit, NewItemDraft
+  types.ts               Category ('All' | 'Tops' | 'Bottoms' | 'Dresses' | 'Shoes' | 'Accessories'),
+                         ClothingCategory, Season, SortMode, AppTab, Item, SavedOutfit, NewItemDraft
   constants.ts           STORAGE_KEY ('closet.items.v1'), OUTFITS_STORAGE_KEY
                          ('@atelier_saved_outfits_v1'), categories, seasons, SEASON_ICONS
   lib/format.ts          greeting(), formatHeaderDate(), formatDate()
@@ -44,7 +44,7 @@ src/
   lib/storage.ts         loadItems() / saveItems()
   hooks/useCloset.ts     items state, loaded gate, saveFailed flag, addItem/toggleFavorite/removeItem
   components/            Header, SearchBar, CategoryChips, SectionHeader, FilterModal,
-                         ItemCard (memo, double-tap heart), EmptyState, Fab, AddItemModal,
+                         ItemCard (memo, double-tap heart & corner heart), EmptyState, Fab, AddItemModal,
                          BottomNavBar, OutfitCanvas (Studio tab), StatsScreen (Stats tab),
                          ItemDetailModal, ItemActionSheet
 scripts/make-icons.mjs   regenerates assets/icon.png, adaptive-icon.png, splash-icon.png
@@ -62,13 +62,19 @@ eas.json                 preview profile builds an installable APK
 - Components must be theme-aware: call `useTheme()` inside render and build styles via a `makeStyles(c)` module-level function — never import colors statically (dark mode would break).
 - Sheets/modal forms reset via remount: outer component renders inner sheet with a `key` derived from `visible` — do NOT reintroduce setState-in-effect resets (eslint react-hooks/set-state-in-effect).
 - Animated.Value / PanResponder singletons in DraggablePiece are created with a `useConst(() => ...)` lazy useState helper — never `useRef(x).current` during render (eslint react-hooks/refs) and never `Date.now()`/`Math.random()` inside components (eslint react-hooks/purity; use module-scope helpers like `nextInstanceId`/`randomRange`).
-- Dragged piece positions must be reported back up to parent state (`onMoveEnd` → `handleUpdatePosition`) — saved looks persist `p.x`/`p.y` from state, not local Animated offsets.
+- Gesture Responders & Multi-Touch:
+  - Pieces support 1-finger translation dragging and 2-finger pinch expand/shrink.
+  - The canvas board also hosts a multi-touch `PanResponder` to capture 2-finger expand/shrink pinch gestures anywhere across the screen for the active piece.
+  - Child action buttons use `onStartShouldSetPanResponder: () => false` on parent responders so clicks are delivered instantly without capture blocking.
+- Studio Canvas pieces render as 100% transparent cutouts on the canvas surface without background drop shadows or borders.
+- Dragged piece positions must be reported back up to parent state (`onMoveEnd` → `handleUpdatePosition`) — saved looks persist `p.x`/`p.y`/`p.scale` from state, not local Animated offsets.
 - `saveFailed` from `useCloset` drives the persistence-failure banner in App; keep surfacing it.
 - Batch-add item ids use `${Date.now()}-${index}` (useCloset.addItem); canvas instance ids use module-scope `nextInstanceId()` counter — never plain Date.now() (collides within one batch).
 
 ## Conventions
 
 - Palettes ("Haute Editorial"): light = silk cream surface `#FAF7F2`, espresso ink `#171614`, champagne gold `#C49B4B`; dark = obsidian `#111114` w/ pale gold `#E6C594`; full tokens in theme.tsx.
+- 5 Categories: `Tops`, `Bottoms`, `Dresses`, `Shoes`, `Accessories`.
 - Styles: each component owns a `makeStyles(c)` returning `StyleSheet.create` with dense entries; OutfitCanvas also has a static module-level sheet for per-piece internals that don't depend on theme.
 - UI text tone: short, warm, editorial elegance ("An empty atelier awaits", "Save Styled Look").
 - Haptics: selectionAsync on favorite/category toggles, impact Light/Medium on buttons and gestures, Heavy before destructive confirm, success notification after save/shuffle.
