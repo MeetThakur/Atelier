@@ -20,13 +20,21 @@ import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { File } from 'expo-file-system';
 import { captureRef } from 'react-native-view-shot';
+import * as MediaLibrary from 'expo-media-library';
 import type { Category, Item, SavedOutfit } from '../types';
 import { OUTFITS_STORAGE_KEY, categories } from '../constants';
 import { useTheme, fonts, shapes, type Palette } from '../theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-type CanvasBackdrop = 'minimal' | 'grid' | 'warm';
+type CanvasBackdrop = 'silk' | 'linen' | 'grid' | 'noir';
+
+const BACKDROP_LABELS: Record<CanvasBackdrop, string> = {
+  silk: 'Studio Silk',
+  linen: 'Warm Linen',
+  grid: 'Architectural Grid',
+  noir: 'Editorial Noir',
+};
 
 let instanceSeq = 0;
 const nextInstanceId = (prefix: string) => `${prefix}-${++instanceSeq}`;
@@ -286,12 +294,17 @@ export function OutfitCanvas({ items }: Props) {
   const [showSavePrompt, setShowSavePrompt] = useState(false);
   const [outfitName, setOutfitName] = useState('');
   const [lastRemovedPiece, setLastRemovedPiece] = useState<CanvasPieceData | null>(null);
-  const [backdrop, setBackdrop] = useState<CanvasBackdrop>('minimal');
+  const [backdrop, setBackdrop] = useState<CanvasBackdrop>('silk');
+  const [backdropToast, setBackdropToast] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [exportedImageUri, setExportedImageUri] = useState<string | null>(null);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [isSavedToGallery, setIsSavedToGallery] = useState(false);
 
   const canvasRef = useRef<View>(null);
   const nextZIndex = useRef(10);
   const undoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Global 2-finger pinch tracker for the entire canvas board
   const canvasPinchDistRef = useRef<number | null>(null);
@@ -360,11 +373,16 @@ export function OutfitCanvas({ items }: Props) {
     if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
   };
 
+  // Instant 1st-tap Bring to Front (reorders array to render on top in DOM order)
   const handleBringToFront = (instanceId: string) => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const newZ = nextZIndex.current++;
-    setCanvasPieces((prev) =>
-      prev.map((p) => (p.instanceId === instanceId ? { ...p, zIndex: newZ } : p))
-    );
+    setCanvasPieces((prev) => {
+      const target = prev.find((p) => p.instanceId === instanceId);
+      if (!target) return prev;
+      const remaining = prev.filter((p) => p.instanceId !== instanceId);
+      return [...remaining, { ...target, zIndex: newZ }];
+    });
   };
 
   const handleUpdateScale = (instanceId: string, newScale: number) => {
@@ -451,9 +469,17 @@ export function OutfitCanvas({ items }: Props) {
   const handleCycleBackdrop = () => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setBackdrop((current) => {
-      if (current === 'minimal') return 'grid';
-      if (current === 'grid') return 'warm';
-      return 'minimal';
+      let next: CanvasBackdrop = 'silk';
+      if (current === 'silk') next = 'linen';
+      else if (current === 'linen') next = 'grid';
+      else if (current === 'grid') next = 'noir';
+      else next = 'silk';
+
+      setBackdropToast(BACKDROP_LABELS[next]);
+      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+      toastTimeoutRef.current = setTimeout(() => setBackdropToast(null), 2000);
+
+      return next;
     });
   };
 
@@ -462,6 +488,7 @@ export function OutfitCanvas({ items }: Props) {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setSelectedInstanceId(null);
     setIsExporting(true);
+    setIsSavedToGallery(false);
 
     try {
       if (!canvasRef.current) throw new Error('Canvas ref unattached');
@@ -470,16 +497,40 @@ export function OutfitCanvas({ items }: Props) {
         quality: 1.0,
       });
 
-      await Share.share({
-        url: uri,
-        title: 'Share Atelier Lookbook',
-        message: 'Lookbook styling curated in Atelier',
-      });
+      setExportedImageUri(uri);
+      setShowExportModal(true);
     } catch {
       Alert.alert('Export Error', 'Could not render high-res lookbook. Please try again.');
     } finally {
       setIsExporting(false);
     }
+  };
+
+  const handleSaveToGallery = async () => {
+    if (!exportedImageUri) return;
+    try {
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Needed', 'Please allow gallery access to save your lookbook photos.');
+        return;
+      }
+      await MediaLibrary.saveToLibraryAsync(exportedImageUri);
+      setIsSavedToGallery(true);
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch {
+      Alert.alert('Error', 'Could not save to gallery. Please try again.');
+    }
+  };
+
+  const handleNativeShare = async () => {
+    if (!exportedImageUri) return;
+    try {
+      await Share.share({
+        url: exportedImageUri,
+        title: 'Atelier Lookbook Styling',
+        message: 'Styled in Atelier Studio',
+      });
+    } catch {}
   };
 
   const handleShuffle = () => {
@@ -640,6 +691,7 @@ export function OutfitCanvas({ items }: Props) {
         </View>
 
         <View style={styles.toolbarRight}>
+          {/* Backdrop Switcher */}
           <Pressable
             onPress={handleCycleBackdrop}
             hitSlop={8}
@@ -649,8 +701,10 @@ export function OutfitCanvas({ items }: Props) {
               name={
                 backdrop === 'grid'
                   ? 'grid'
-                  : backdrop === 'warm'
-                  ? 'color-palette-outline'
+                  : backdrop === 'linen'
+                  ? 'color-filter'
+                  : backdrop === 'noir'
+                  ? 'contrast'
                   : 'color-wand-outline'
               }
               size={17}
@@ -658,6 +712,7 @@ export function OutfitCanvas({ items }: Props) {
             />
           </Pressable>
 
+          {/* Export & Share */}
           <Pressable
             onPress={handleExportAndShare}
             hitSlop={8}
@@ -674,6 +729,7 @@ export function OutfitCanvas({ items }: Props) {
             )}
           </Pressable>
 
+          {/* Smart Shuffle */}
           <Pressable
             onPress={handleShuffle}
             hitSlop={8}
@@ -682,6 +738,7 @@ export function OutfitCanvas({ items }: Props) {
             <Ionicons name="shuffle-outline" size={17} color={c.onSurface} />
           </Pressable>
 
+          {/* Saved Outfits */}
           <Pressable
             onPress={() => setShowSavedModal(true)}
             hitSlop={8}
@@ -695,6 +752,7 @@ export function OutfitCanvas({ items }: Props) {
             )}
           </Pressable>
 
+          {/* Save Look CTA */}
           <Pressable
             onPress={() => {
               if (canvasPieces.length > 0) {
@@ -711,6 +769,7 @@ export function OutfitCanvas({ items }: Props) {
             <Ionicons name="checkmark-done" size={17} color={c.gold} />
           </Pressable>
 
+          {/* Clear Board */}
           <Pressable
             onPress={handleClear}
             hitSlop={8}
@@ -731,16 +790,28 @@ export function OutfitCanvas({ items }: Props) {
         collapsable={false}
         style={[
           styles.canvasBoard,
-          backdrop === 'warm' && styles.canvasBoardWarm,
+          backdrop === 'linen' && styles.canvasBoardLinen,
+          backdrop === 'noir' && styles.canvasBoardNoir,
           backdrop === 'grid' && styles.canvasBoardGrid,
         ]}
         {...canvasBoardResponder.panHandlers}
       >
-        {/* Subtle Architectural Grid Overlay when Grid backdrop active */}
+        {/* Architectural Grid Overlay */}
         {backdrop === 'grid' && (
           <View style={styles.gridOverlay} pointerEvents="none">
             <View style={styles.gridLineVertical} />
             <View style={styles.gridLineHorizontal} />
+            <View style={styles.gridCornerTopLeft} />
+            <View style={styles.gridCornerTopRight} />
+            <View style={styles.gridCornerBottomLeft} />
+            <View style={styles.gridCornerBottomRight} />
+          </View>
+        )}
+
+        {/* Backdrop Mode Toast */}
+        {backdropToast && (
+          <View style={styles.backdropToastWrap} pointerEvents="none">
+            <Text style={styles.backdropToastText}>{backdropToast}</Text>
           </View>
         )}
 
@@ -856,6 +927,57 @@ export function OutfitCanvas({ items }: Props) {
           </>
         )}
       </View>
+
+      {/* Lookbook Export & Share Modal */}
+      <Modal
+        visible={showExportModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowExportModal(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.exportModalCard}>
+            <View style={styles.exportModalHeader}>
+              <Text style={styles.exportModalTitle}>Lookbook Flatlay</Text>
+              <Pressable onPress={() => setShowExportModal(false)} hitSlop={8}>
+                <Ionicons name="close" size={20} color={c.onSurface} />
+              </Pressable>
+            </View>
+
+            {exportedImageUri && (
+              <View style={styles.exportPreviewWrap}>
+                <Image source={{ uri: exportedImageUri }} style={styles.exportPreviewImg} resizeMode="contain" />
+              </View>
+            )}
+
+            <View style={styles.exportActionsRow}>
+              <Pressable
+                onPress={handleSaveToGallery}
+                style={[styles.exportActionBtn, isSavedToGallery && styles.exportActionBtnSuccess]}
+              >
+                <Ionicons
+                  name={isSavedToGallery ? 'checkmark-circle' : 'download-outline'}
+                  size={18}
+                  color={isSavedToGallery ? '#FFFFFF' : c.onSurface}
+                />
+                <Text
+                  style={[
+                    styles.exportActionBtnText,
+                    isSavedToGallery && styles.exportActionBtnTextSuccess,
+                  ]}
+                >
+                  {isSavedToGallery ? 'Saved to Photos' : 'Save to Photos'}
+                </Text>
+              </Pressable>
+
+              <Pressable onPress={handleNativeShare} style={[styles.exportActionBtn, styles.exportShareBtn]}>
+                <Ionicons name="share-social" size={18} color={c.onPrimary} />
+                <Text style={styles.exportShareBtnText}>Share</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Save Look Prompt Modal */}
       <Modal
@@ -1076,8 +1198,11 @@ const makeStyles = (c: Palette) =>
       backgroundColor: c.surface,
       overflow: 'hidden',
     },
-    canvasBoardWarm: {
-      backgroundColor: c.surfaceContainerLow,
+    canvasBoardLinen: {
+      backgroundColor: '#EFE6D8',
+    },
+    canvasBoardNoir: {
+      backgroundColor: '#181716',
     },
     canvasBoardGrid: {
       backgroundColor: c.surface,
@@ -1104,6 +1229,62 @@ const makeStyles = (c: Palette) =>
       borderTopWidth: 1,
       borderTopColor: c.outlineVariant,
       borderStyle: 'dashed',
+    },
+    gridCornerTopLeft: {
+      position: 'absolute',
+      top: 18,
+      left: 18,
+      width: 12,
+      height: 12,
+      borderTopWidth: 1.5,
+      borderLeftWidth: 1.5,
+      borderColor: c.gold,
+    },
+    gridCornerTopRight: {
+      position: 'absolute',
+      top: 18,
+      right: 18,
+      width: 12,
+      height: 12,
+      borderTopWidth: 1.5,
+      borderRightWidth: 1.5,
+      borderColor: c.gold,
+    },
+    gridCornerBottomLeft: {
+      position: 'absolute',
+      bottom: 18,
+      left: 18,
+      width: 12,
+      height: 12,
+      borderBottomWidth: 1.5,
+      borderLeftWidth: 1.5,
+      borderColor: c.gold,
+    },
+    gridCornerBottomRight: {
+      position: 'absolute',
+      bottom: 18,
+      right: 18,
+      width: 12,
+      height: 12,
+      borderBottomWidth: 1.5,
+      borderRightWidth: 1.5,
+      borderColor: c.gold,
+    },
+    backdropToastWrap: {
+      position: 'absolute',
+      top: 14,
+      alignSelf: 'center',
+      backgroundColor: 'rgba(18, 16, 14, 0.82)',
+      borderRadius: shapes.full,
+      paddingHorizontal: 14,
+      paddingVertical: 5,
+      zIndex: 100,
+    },
+    backdropToastText: {
+      fontFamily: fonts.bold,
+      color: '#FFFFFF',
+      fontSize: 11.5,
+      letterSpacing: 0.5,
     },
     emptyCanvasHint: {
       flex: 1,
@@ -1274,6 +1455,77 @@ const makeStyles = (c: Palette) =>
       justifyContent: 'center',
       alignItems: 'center',
       padding: 20,
+    },
+    exportModalCard: {
+      width: '100%',
+      maxWidth: 380,
+      backgroundColor: c.cardBg,
+      borderRadius: shapes.xxl,
+      padding: 20,
+      borderWidth: 1,
+      borderColor: c.outlineVariant,
+    },
+    exportModalHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 14,
+    },
+    exportModalTitle: {
+      fontFamily: fonts.displayBold,
+      color: c.onSurface,
+      fontSize: 20,
+    },
+    exportPreviewWrap: {
+      width: '100%',
+      height: 280,
+      borderRadius: shapes.lg,
+      backgroundColor: c.surfaceContainerLow,
+      overflow: 'hidden',
+      marginBottom: 16,
+      borderWidth: 1,
+      borderColor: c.outlineVariant,
+    },
+    exportPreviewImg: {
+      width: '100%',
+      height: '100%',
+    },
+    exportActionsRow: {
+      flexDirection: 'row',
+      gap: 10,
+    },
+    exportActionBtn: {
+      flex: 1,
+      height: 48,
+      borderRadius: shapes.full,
+      backgroundColor: c.surfaceContainerHigh,
+      borderWidth: 1,
+      borderColor: c.outlineVariant,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+    },
+    exportActionBtnSuccess: {
+      backgroundColor: '#2E7D32',
+      borderColor: '#2E7D32',
+    },
+    exportActionBtnText: {
+      fontFamily: fonts.bold,
+      color: c.onSurface,
+      fontSize: 13.5,
+    },
+    exportActionBtnTextSuccess: {
+      color: '#FFFFFF',
+    },
+    exportShareBtn: {
+      backgroundColor: c.primary,
+      borderColor: c.primary,
+    },
+    exportShareBtnText: {
+      fontFamily: fonts.bold,
+      color: c.onPrimary,
+      fontSize: 13.5,
     },
     promptModal: {
       width: '100%',
