@@ -20,6 +20,7 @@ import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { File } from 'expo-file-system';
 import { captureRef } from 'react-native-view-shot';
+import * as Sharing from 'expo-sharing';
 import type { Category, Item, SavedOutfit } from '../types';
 import { OUTFITS_STORAGE_KEY, categories } from '../constants';
 import { useTheme, fonts, shapes, type Palette } from '../theme';
@@ -498,12 +499,23 @@ export function OutfitCanvas({ items }: Props) {
     if (!exportedImageUri) return;
     try {
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      await Share.share({
-        url: exportedImageUri,
-        title: 'Atelier Lookbook Styling',
-        message: 'Styled in Atelier Studio',
-      });
-    } catch {}
+      const isAvailable = await Sharing.isAvailableAsync();
+      if (isAvailable) {
+        await Sharing.shareAsync(exportedImageUri, {
+          mimeType: 'image/png',
+          dialogTitle: 'Share Lookbook Flatlay',
+          UTI: 'public.png',
+        });
+      } else {
+        await Share.share({
+          url: exportedImageUri,
+          title: 'Atelier Lookbook Styling',
+          message: 'Styled in Atelier Studio',
+        });
+      }
+    } catch {
+      Alert.alert('Share Error', 'Could not share lookbook photo. Please try again.');
+    }
   };
 
   const handleShuffle = () => {
