@@ -240,17 +240,6 @@ function AtelierApp() {
                         </Text>
                       </View>
 
-                      {/* Styled clothing preview collage */}
-                      {items.length > 0 && (
-                        <View style={styles.collageCircle}>
-                          <Image
-                            source={{ uri: items[0].image }}
-                            style={styles.collageImg}
-                            resizeMode="contain"
-                          />
-                        </View>
-                      )}
-
                       <Pressable
                         onPress={() => handleTabChange('canvas')}
                         style={({ pressed }) => [styles.spotlightActionBtn, pressed && styles.pressed]}

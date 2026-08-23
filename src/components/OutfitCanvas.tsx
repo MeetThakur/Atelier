@@ -687,11 +687,6 @@ export function OutfitCanvas({ items }: Props) {
       <View style={styles.topHeader}>
         <View style={styles.headerLeft}>
           <Text style={styles.canvasTitle}>Studio</Text>
-          {canvasPieces.length > 0 && (
-            <Text style={styles.canvasSubtitle}>
-              {canvasPieces.length} {canvasPieces.length === 1 ? 'piece' : 'pieces'}
-            </Text>
-          )}
         </View>
 
         <View style={styles.headerRight}>
@@ -718,7 +713,7 @@ export function OutfitCanvas({ items }: Props) {
             hitSlop={6}
             style={({ pressed }) => [styles.headerIconBtn, pressed && styles.pressed]}
           >
-            <Ionicons name="bookmark-outline" size={16} color={c.onSurface} />
+            <Ionicons name="bookmark-outline" size={15} color={c.onSurface} />
             {savedOutfits.length > 0 && (
               <View style={styles.savedBadge}>
                 <Text style={styles.savedBadgeText}>{savedOutfits.length}</Text>
@@ -731,10 +726,9 @@ export function OutfitCanvas({ items }: Props) {
             <Pressable
               onPress={() => setShowSavePrompt(true)}
               hitSlop={6}
-              style={({ pressed }) => [styles.headerSaveBtn, pressed && styles.pressed]}
+              style={({ pressed }) => [styles.headerIconBtn, styles.headerSaveIconBtn, pressed && styles.pressed]}
             >
-              <Ionicons name="bookmark" size={13} color={c.gold} />
-              <Text style={styles.headerSaveBtnText}>Save</Text>
+              <Ionicons name="bookmark" size={15} color={c.gold} />
             </Pressable>
           )}
 
@@ -1255,21 +1249,9 @@ const makeStyles = (c: Palette) =>
       color: '#FFFFFF',
       fontSize: 8.5,
     },
-    headerSaveBtn: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 5,
-      height: 34,
-      paddingHorizontal: 12,
-      borderRadius: shapes.full,
+    headerSaveIconBtn: {
       backgroundColor: c.goldContainer,
-      borderWidth: 1,
       borderColor: c.gold,
-    },
-    headerSaveBtnText: {
-      fontFamily: fonts.bold,
-      color: c.gold,
-      fontSize: 12,
     },
     headerShareBtn: {
       flexDirection: 'row',
@@ -1501,10 +1483,10 @@ const makeStyles = (c: Palette) =>
       borderWidth: 1,
       borderColor: c.outlineVariant,
       paddingTop: 10,
-      paddingBottom: 16,
+      paddingBottom: 82,
     },
     drawerCollapsed: {
-      paddingBottom: 10,
+      paddingBottom: 72,
     },
     canvasCornerDock: {
       position: 'absolute',
