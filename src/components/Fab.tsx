@@ -1,7 +1,7 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { useTheme, fonts, shapes, type Palette } from '../theme';
+import { useTheme, type Palette } from '../theme';
 
 type Props = {
   onPress: () => void;
@@ -22,10 +22,7 @@ export function Fab({ onPress }: Props) {
       onPress={handlePress}
       style={({ pressed }) => [styles.fab, pressed && styles.pressed]}
     >
-      <View style={styles.iconWrap}>
-        <Ionicons name="add" size={17} color={c.onPrimary} />
-      </View>
-      <Text style={styles.label}>Add Piece</Text>
+      <Ionicons name="add" size={26} color={c.onPrimary} />
     </Pressable>
   );
 }
@@ -34,39 +31,23 @@ const makeStyles = (c: Palette) =>
   StyleSheet.create({
     fab: {
       position: 'absolute',
-      right: 18,
-      bottom: 18,
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 7,
-      height: 48,
-      paddingHorizontal: 16,
-      borderRadius: shapes.full,
+      right: 16,
+      bottom: 86,
+      width: 52,
+      height: 52,
+      borderRadius: 26,
       backgroundColor: c.primary,
-      shadowColor: '#000',
-      shadowOpacity: 0.25,
-      shadowRadius: 14,
-      shadowOffset: { width: 0, height: 6 },
-      elevation: 6,
-      borderWidth: 1,
-      borderColor: 'rgba(255, 255, 255, 0.12)',
-    },
-    iconWrap: {
-      width: 24,
-      height: 24,
-      borderRadius: 12,
-      backgroundColor: 'rgba(255, 255, 255, 0.18)',
       alignItems: 'center',
       justifyContent: 'center',
-    },
-    label: {
-      fontFamily: fonts.bold,
-      color: c.onPrimary,
-      fontSize: 13.5,
-      letterSpacing: 0.2,
+      shadowColor: '#000',
+      shadowOpacity: 0.28,
+      shadowRadius: 10,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: 7,
+      zIndex: 100,
     },
     pressed: {
-      transform: [{ scale: 0.94 }],
+      transform: [{ scale: 0.93 }],
       opacity: 0.9,
     },
   });

@@ -44,7 +44,7 @@ export function Header({ totalPieces, searchActive, onToggleSearch }: Props) {
           style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
         >
           <Ionicons
-            name={isDark ? 'sunny-outline' : 'moon-outline'}
+            name={isDark ? 'sunny-outline' : 'sunny-outline'}
             size={18}
             color={c.onSurface}
           />
@@ -77,8 +77,8 @@ const makeStyles = (c: Palette) =>
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      paddingTop: 12,
-      paddingBottom: 10,
+      paddingTop: 16,
+      paddingBottom: 14,
       paddingHorizontal: 2,
     },
     leftCol: {
@@ -87,32 +87,37 @@ const makeStyles = (c: Palette) =>
     title: {
       fontFamily: fonts.displayBold,
       color: c.onSurface,
-      fontSize: 28,
-      letterSpacing: -0.5,
+      fontSize: 32,
+      letterSpacing: -0.6,
       includeFontPadding: false,
     },
     subtitle: {
       fontFamily: fonts.medium,
       color: c.onSurfaceVariant,
-      fontSize: 12,
-      letterSpacing: 0.1,
-      marginTop: 1,
+      fontSize: 13,
+      letterSpacing: -0.1,
+      marginTop: 2,
       includeFontPadding: false,
     },
     actionsRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 6,
+      gap: 10,
     },
     iconBtn: {
-      width: 36,
-      height: 36,
-      borderRadius: shapes.full,
-      backgroundColor: c.surfaceContainerHigh,
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: c.cardBg,
       borderWidth: 1,
       borderColor: c.outlineVariant,
       alignItems: 'center',
       justifyContent: 'center',
+      shadowColor: '#000',
+      shadowOpacity: 0.03,
+      shadowRadius: 4,
+      shadowOffset: { width: 0, height: 1 },
+      elevation: 1,
     },
     iconBtnActive: {
       backgroundColor: c.primary,

@@ -23,7 +23,7 @@ export function BottomNavBar({ activeTab, onTabChange }: Props) {
   };
 
   return (
-    <View style={styles.dockWrap}>
+    <View style={styles.dockWrap} pointerEvents="box-none">
       <View style={styles.navPill}>
         <Pressable
           onPress={() => handleTab('archive')}
@@ -34,8 +34,8 @@ export function BottomNavBar({ activeTab, onTabChange }: Props) {
           ]}
         >
           <Ionicons
-            name={activeTab === 'archive' ? 'grid' : 'grid-outline'}
-            size={16}
+            name={activeTab === 'archive' ? 'shirt' : 'shirt-outline'}
+            size={18}
             color={activeTab === 'archive' ? c.gold : c.onSurfaceVariant}
           />
           <Text
@@ -58,7 +58,7 @@ export function BottomNavBar({ activeTab, onTabChange }: Props) {
         >
           <Ionicons
             name={activeTab === 'canvas' ? 'color-palette' : 'color-palette-outline'}
-            size={16}
+            size={18}
             color={activeTab === 'canvas' ? c.gold : c.onSurfaceVariant}
           />
           <Text
@@ -81,7 +81,7 @@ export function BottomNavBar({ activeTab, onTabChange }: Props) {
         >
           <Ionicons
             name={activeTab === 'stats' ? 'stats-chart' : 'stats-chart-outline'}
-            size={16}
+            size={18}
             color={activeTab === 'stats' ? c.gold : c.onSurfaceVariant}
           />
           <Text
@@ -101,48 +101,47 @@ export function BottomNavBar({ activeTab, onTabChange }: Props) {
 const makeStyles = (c: Palette, bottomInset: number) =>
   StyleSheet.create({
     dockWrap: {
-      backgroundColor: c.surface,
-      borderTopWidth: 1,
-      borderTopColor: c.outlineVariant,
-      paddingTop: 8,
-      paddingBottom: Math.max(bottomInset, Platform.OS === 'ios' ? 14 : 10),
-      paddingHorizontal: 18,
+      position: 'absolute',
+      bottom: Math.max(bottomInset, Platform.OS === 'ios' ? 16 : 12),
+      left: 0,
+      right: 0,
       alignItems: 'center',
+      paddingHorizontal: 20,
     },
     navPill: {
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: c.cardBg,
       borderRadius: shapes.full,
-      padding: 3.5,
+      padding: 5,
       borderWidth: 1,
       borderColor: c.outlineVariant,
       shadowColor: '#000',
-      shadowOpacity: 0.08,
-      shadowRadius: 10,
-      shadowOffset: { width: 0, height: 3 },
-      elevation: 4,
+      shadowOpacity: 0.1,
+      shadowRadius: 14,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: 6,
       gap: 4,
     },
     tabItem: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 5,
-      paddingHorizontal: 16,
-      paddingVertical: 7.5,
+      gap: 6,
+      paddingHorizontal: 20,
+      paddingVertical: 9,
       borderRadius: shapes.full,
     },
     tabItemActive: {
-      backgroundColor: c.primary,
+      backgroundColor: c.imageBg,
     },
     tabLabel: {
-      fontSize: 12.5,
+      fontSize: 13,
       includeFontPadding: false,
     },
     tabLabelActive: {
       fontFamily: fonts.bold,
-      color: c.onPrimary,
-      letterSpacing: 0.2,
+      color: c.onSurface,
+      letterSpacing: -0.1,
     },
     tabLabelInactive: {
       fontFamily: fonts.medium,

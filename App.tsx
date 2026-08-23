@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Animated, FlatList, Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { Animated, FlatList, Image, Modal, Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
 import {
@@ -36,8 +36,15 @@ import { SEASON_ICONS } from './src/constants';
 import type { AppTab, Category, Item, Season, SortMode } from './src/types';
 import { ThemeProvider, useTheme, useThemeMode, fonts, shapes, type Palette } from './src/theme';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
+
+const SORT_OPTIONS: { id: SortMode; label: string; description: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { id: 'newest', label: 'Recently added', description: 'Most recently photographed pieces first', icon: 'time-outline' },
+  { id: 'favorites', label: 'Favorites first', description: 'Your favorited wardrobe staples first', icon: 'heart-outline' },
+  { id: 'name', label: 'Alphabetical (A to Z)', description: 'Sorted alphabetically by piece name', icon: 'text-outline' },
+];
 
 function AtelierApp() {
   const c = useTheme();
@@ -61,6 +68,7 @@ function AtelierApp() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [filterModalOpen, setFilterModalOpen] = useState(false);
+  const [sortModalOpen, setSortModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
   const [actionSheetItem, setActionSheetItem] = useState<Item | null>(null);
   const [sortMode, setSortMode] = useState<SortMode>('newest');
@@ -146,6 +154,13 @@ function AtelierApp() {
   const activeFilterCount = season !== 'All' ? 1 : 0;
   const hasActiveFilters = Boolean(query) || category !== 'All' || activeFilterCount > 0;
 
+  const currentSortLabel =
+    sortMode === 'newest'
+      ? 'Recently added'
+      : sortMode === 'favorites'
+      ? 'Favorites first'
+      : 'Alphabetical';
+
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
@@ -179,10 +194,6 @@ function AtelierApp() {
               value={category}
               onChange={setCategory}
               counts={loaded ? categoryCounts : undefined}
-              activeFilterCount={activeFilterCount}
-              onOpenFilter={() => setFilterModalOpen(true)}
-              sortMode={sortMode}
-              onSortChange={setSortMode}
             />
 
             {/* Active Sub-Filter Badges (compact) */}
@@ -215,27 +226,57 @@ function AtelierApp() {
               contentContainerStyle={styles.grid}
               showsVerticalScrollIndicator={false}
               ListHeaderComponent={
-                !hasActiveFilters && items.length > 0 ? (
-                  <View style={styles.spotlightHero}>
-                    <View style={styles.spotlightLeft}>
-                      <View style={styles.spotlightTag}>
-                        <Ionicons name="sparkles" size={11} color={c.gold} />
-                        <Text style={styles.spotlightTagText}>STUDIO SPOTLIGHT</Text>
+                <>
+                  {!hasActiveFilters && items.length > 0 && (
+                    <View style={styles.spotlightHero}>
+                      <View style={styles.spotlightLeft}>
+                        <View style={styles.spotlightTag}>
+                          <Ionicons name="sparkles" size={11} color={c.gold} />
+                          <Text style={styles.spotlightTagText}>STUDIO</Text>
+                        </View>
+                        <Text style={styles.spotlightTitle}>Style Today's Look</Text>
+                        <Text style={styles.spotlightSubtitle}>
+                          Mix and match {items.length} pieces on the styling canvas.
+                        </Text>
                       </View>
-                      <Text style={styles.spotlightTitle}>Style Today's Look</Text>
-                      <Text style={styles.spotlightSubtitle}>
-                        Mix and match {items.length} pieces on the styling canvas.
-                      </Text>
+
+                      {/* Styled clothing preview collage */}
+                      {items.length > 0 && (
+                        <View style={styles.collageCircle}>
+                          <Image
+                            source={{ uri: items[0].image }}
+                            style={styles.collageImg}
+                            resizeMode="contain"
+                          />
+                        </View>
+                      )}
+
+                      <Pressable
+                        onPress={() => handleTabChange('canvas')}
+                        style={({ pressed }) => [styles.spotlightActionBtn, pressed && styles.pressed]}
+                      >
+                        <Ionicons name="sparkles" size={13} color={c.onPrimary} />
+                        <Text style={styles.spotlightActionText}>Try Studio</Text>
+                      </Pressable>
                     </View>
+                  )}
+
+                  {/* Section Header: "Your Archive" + Sort Dropdown */}
+                  <View style={styles.sectionHeaderRow}>
+                    <Text style={styles.sectionTitle}>Your Archive</Text>
+
                     <Pressable
-                      onPress={() => handleTabChange('canvas')}
-                      style={({ pressed }) => [styles.spotlightActionBtn, pressed && styles.pressed]}
+                      onPress={() => {
+                        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setSortModalOpen(true);
+                      }}
+                      style={({ pressed }) => [styles.sortDropdownBtn, pressed && styles.pressed]}
                     >
-                      <Ionicons name="color-wand" size={14} color={c.onPrimary} />
-                      <Text style={styles.spotlightActionText}>Studio</Text>
+                      <Text style={styles.sortDropdownText}>{currentSortLabel}</Text>
+                      <Ionicons name="chevron-down" size={13} color={c.onSurfaceVariant} />
                     </Pressable>
                   </View>
-                ) : null
+                </>
               }
               ListEmptyComponent={
                 hasActiveFilters ? (
@@ -292,6 +333,62 @@ function AtelierApp() {
         resultCount={visibleItems.length}
       />
 
+      {/* Sort Selection Sheet Modal */}
+      <Modal
+        visible={sortModalOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSortModalOpen(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <Pressable style={styles.modalScrim} onPress={() => setSortModalOpen(false)} />
+          <View style={styles.sortSheet}>
+            <View style={styles.sheetHandle} />
+            <Text style={styles.sheetTitle}>Sort Archive</Text>
+
+            <View style={styles.sortOptionsList}>
+              {SORT_OPTIONS.map((opt) => {
+                const isSelected = opt.id === sortMode;
+                return (
+                  <Pressable
+                    key={opt.id}
+                    onPress={() => {
+                      void Haptics.selectionAsync();
+                      setSortMode(opt.id);
+                      setSortModalOpen(false);
+                    }}
+                    style={({ pressed }) => [
+                      styles.sortOptionRow,
+                      isSelected && styles.sortOptionRowActive,
+                      pressed && styles.pressed,
+                    ]}
+                  >
+                    <View style={[styles.optIconWrap, isSelected && styles.optIconWrapActive]}>
+                      <Ionicons
+                        name={opt.icon}
+                        size={17}
+                        color={isSelected ? c.gold : c.onSurfaceVariant}
+                      />
+                    </View>
+
+                    <View style={styles.optTextCol}>
+                      <Text style={[styles.optLabel, isSelected && styles.optLabelActive]}>
+                        {opt.label}
+                      </Text>
+                      <Text style={styles.optDesc}>{opt.description}</Text>
+                    </View>
+
+                    {isSelected && (
+                      <Ionicons name="checkmark" size={16} color={c.gold} />
+                    )}
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       <ItemDetailModal
         item={currentSelectedItem}
         visible={currentSelectedItem !== null}
@@ -306,9 +403,9 @@ function AtelierApp() {
         item={currentActionSheetItem}
         visible={currentActionSheetItem !== null}
         onClose={() => setActionSheetItem(null)}
-        onOpenDetails={(item) => setSelectedItem(item)}
         onToggleFavorite={toggleFavorite}
         onRemove={removeItem}
+        onOpenDetails={(item: Item) => setSelectedItem(item)}
       />
     </SafeAreaView>
   );
@@ -369,7 +466,7 @@ const makeStyles = (c: Palette) =>
     },
     container: {
       flex: 1,
-      paddingHorizontal: 18,
+      paddingHorizontal: 16,
     },
     errorBanner: {
       backgroundColor: c.errorContainer,
@@ -426,57 +523,191 @@ const makeStyles = (c: Palette) =>
     spotlightHero: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
       backgroundColor: c.surfaceContainerLow,
-      borderRadius: shapes.xl,
-      padding: 14,
-      marginTop: 4,
-      marginBottom: 14,
+      borderRadius: 24,
+      padding: 18,
+      marginTop: 6,
+      marginBottom: 18,
       borderWidth: 1,
       borderColor: c.outlineVariant,
+      position: 'relative',
+      overflow: 'hidden',
     },
     spotlightLeft: {
       flex: 1,
-      paddingRight: 10,
+      paddingRight: 8,
     },
     spotlightTag: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 4,
-      marginBottom: 3,
+      marginBottom: 4,
     },
     spotlightTagText: {
       fontFamily: fonts.bold,
       color: c.gold,
-      fontSize: 9.5,
-      letterSpacing: 0.8,
+      fontSize: 10,
+      letterSpacing: 1.2,
     },
     spotlightTitle: {
-      fontFamily: fonts.bold,
+      fontFamily: fonts.displayBold,
       color: c.onSurface,
-      fontSize: 15,
-      letterSpacing: -0.2,
-      marginBottom: 2,
+      fontSize: 18,
+      letterSpacing: -0.3,
+      marginBottom: 3,
     },
     spotlightSubtitle: {
       fontFamily: fonts.medium,
       color: c.onSurfaceVariant,
-      fontSize: 11.5,
-      lineHeight: 16,
+      fontSize: 12,
+      lineHeight: 17,
+    },
+    collageCircle: {
+      width: 72,
+      height: 72,
+      borderRadius: 36,
+      backgroundColor: c.imageBg,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 6,
+      marginRight: 12,
+      borderWidth: 1,
+      borderColor: c.outlineVariant,
+    },
+    collageImg: {
+      width: '100%',
+      height: '100%',
     },
     spotlightActionBtn: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 5,
+      gap: 6,
       backgroundColor: c.primary,
-      paddingHorizontal: 12,
-      paddingVertical: 7,
+      paddingHorizontal: 16,
+      paddingVertical: 10,
       borderRadius: shapes.full,
+      shadowColor: '#000',
+      shadowOpacity: 0.12,
+      shadowRadius: 6,
+      shadowOffset: { width: 0, height: 2 },
+      elevation: 3,
     },
     spotlightActionText: {
       fontFamily: fonts.bold,
       color: c.onPrimary,
+      fontSize: 12.5,
+      letterSpacing: -0.1,
+    },
+    sectionHeaderRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingTop: 4,
+      paddingBottom: 14,
+      paddingHorizontal: 2,
+    },
+    sectionTitle: {
+      fontFamily: fonts.displayBold,
+      color: c.onSurface,
+      fontSize: 18,
+      letterSpacing: -0.3,
+    },
+    sortDropdownBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+      backgroundColor: c.cardBg,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: shapes.full,
+      borderWidth: 1,
+      borderColor: c.outlineVariant,
+    },
+    sortDropdownText: {
+      fontFamily: fonts.medium,
+      color: c.onSurfaceVariant,
       fontSize: 12,
+    },
+    modalBackdrop: {
+      flex: 1,
+      justifyContent: 'flex-end',
+      backgroundColor: c.scrim,
+    },
+    modalScrim: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+    },
+    sortSheet: {
+      backgroundColor: c.surfaceContainerLow,
+      borderTopLeftRadius: shapes.xxl,
+      borderTopRightRadius: shapes.xxl,
+      paddingHorizontal: 20,
+      paddingTop: 12,
+      paddingBottom: 32,
+      borderWidth: 1,
+      borderColor: c.outlineVariant,
+    },
+    sheetHandle: {
+      alignSelf: 'center',
+      width: 32,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: c.outlineVariant,
+      marginBottom: 16,
+    },
+    sheetTitle: {
+      fontFamily: fonts.displayBold,
+      color: c.onSurface,
+      fontSize: 19,
+      marginBottom: 16,
+    },
+    sortOptionsList: {
+      gap: 6,
+    },
+    sortOptionRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 12,
+      borderRadius: shapes.lg,
+      backgroundColor: c.cardBg,
+      borderWidth: 1,
+      borderColor: c.outlineVariant,
+      gap: 12,
+    },
+    sortOptionRowActive: {
+      borderColor: c.gold,
+      backgroundColor: c.goldContainer,
+    },
+    optIconWrap: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: c.surfaceContainerHigh,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    optIconWrapActive: {
+      backgroundColor: '#FFFFFF',
+    },
+    optTextCol: {
+      flex: 1,
+    },
+    optLabel: {
+      fontFamily: fonts.bold,
+      color: c.onSurface,
+      fontSize: 14,
+      marginBottom: 2,
+    },
+    optLabelActive: {
+      color: c.onSurface,
+    },
+    optDesc: {
+      fontFamily: fonts.medium,
+      color: c.onSurfaceVariant,
+      fontSize: 11.5,
     },
     pressed: {
       opacity: 0.75,

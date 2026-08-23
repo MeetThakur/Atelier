@@ -3,7 +3,6 @@ import { Animated, Image, Pressable, StyleSheet, Text, View } from 'react-native
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import type { Item } from '../types';
-import { SEASON_ICONS } from '../constants';
 import { useTheme, fonts, shapes, type Palette } from '../theme';
 
 type Props = {
@@ -55,7 +54,6 @@ export const ItemCard = memo(function ItemCard({
     const DOUBLE_TAP_DELAY = 280;
 
     if (now - lastTapRef.current < DOUBLE_TAP_DELAY) {
-      // Double Tap detected -> trigger animated heart!
       lastTapRef.current = 0;
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       triggerHeartAnimation();
@@ -77,21 +75,8 @@ export const ItemCard = memo(function ItemCard({
     onOpenMenu();
   };
 
-  const isGenericName =
-    !item.name ||
-    item.name === 'Piece' ||
-    item.name === 'Tops' ||
-    item.name === 'Bottoms' ||
-    item.name === 'Dresses' ||
-    item.name === 'Shoes' ||
-    item.name.startsWith('Piece ') ||
-    item.name.startsWith('Tops ') ||
-    item.name.startsWith('Bottoms ') ||
-    item.name.startsWith('Dresses ') ||
-    item.name.startsWith('Shoes ');
-
-  const hasCustomName = !isGenericName;
-  const hasSeason = item.season && item.season !== 'All-Season';
+  const displayName = item.name && item.name !== 'Piece' ? item.name : item.category;
+  const subInfo = `${item.category}  •  ${item.season && item.season !== 'All-Season' ? item.season : 'All-Season'}`;
 
   return (
     <Pressable
@@ -100,10 +85,8 @@ export const ItemCard = memo(function ItemCard({
       delayLongPress={350}
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
     >
-      <View style={[styles.imageWrap, !hasCustomName && !hasSeason && styles.imageWrapFull]}>
-        <View style={styles.studioPedestal}>
-          <Image source={{ uri: item.image }} style={styles.image} resizeMode="contain" />
-        </View>
+      <View style={styles.imagePedestal}>
+        <Image source={{ uri: item.image }} style={styles.image} resizeMode="contain" />
 
         {/* Double-tap Pop Animated Heart */}
         <Animated.View
@@ -116,44 +99,10 @@ export const ItemCard = memo(function ItemCard({
             },
           ]}
         >
-          <Ionicons name="heart" size={68} color="#FFFFFF" style={styles.heartShadow} />
-          <Ionicons name="heart" size={64} color="#E0534C" style={styles.heartForeground} />
+          <Ionicons name="heart" size={64} color="#E0534C" />
         </Animated.View>
 
-        {/* Category Pill Tag */}
-        <View
-          style={[
-            styles.categoryPill,
-            {
-              backgroundColor: {
-                Tops: c.catTopsBg,
-                Bottoms: c.catBottomsBg,
-                Dresses: c.catDressesBg,
-                Shoes: c.catShoesBg,
-                Accessories: c.catAccessoriesBg,
-              }[item.category],
-            },
-          ]}
-        >
-          <Text
-            style={[
-              styles.categoryPillText,
-              {
-                color: {
-                  Tops: c.catTops,
-                  Bottoms: c.catBottoms,
-                  Dresses: c.catDresses,
-                  Shoes: c.catShoes,
-                  Accessories: c.catAccessories,
-                }[item.category],
-              },
-            ]}
-          >
-            {item.category}
-          </Text>
-        </View>
-
-        {/* Corner Favorite Button Indicator */}
+        {/* Floating Heart Button at Bottom-Right of Pedestal */}
         <Pressable
           onPress={(e) => {
             e.stopPropagation();
@@ -161,43 +110,27 @@ export const ItemCard = memo(function ItemCard({
           }}
           hitSlop={8}
           style={({ pressed }) => [
-            styles.cornerFavoriteBtn,
-            item.favorite && styles.cornerFavoriteBtnActive,
+            styles.cornerHeartBtn,
             pressed && styles.btnPressed,
           ]}
         >
           <Ionicons
             name={item.favorite ? 'heart' : 'heart-outline'}
-            size={13}
-            color={item.favorite ? '#E0534C' : c.onSurfaceVariant}
+            size={16}
+            color={item.favorite ? '#E0534C' : c.onSurface}
           />
         </Pressable>
       </View>
 
-      {(hasCustomName || hasSeason) && (
-        <View style={styles.infoArea}>
-          {hasCustomName && (
-            <View style={styles.nameRow}>
-              <Text style={styles.name} numberOfLines={1}>
-                {item.name}
-              </Text>
-            </View>
-          )}
-
-          {hasSeason && (
-            <View style={styles.metaRow}>
-              <View style={styles.seasonBadge}>
-                <Ionicons
-                  name={SEASON_ICONS[item.season!] || 'sparkles-outline'}
-                  size={11}
-                  color={c.gold}
-                />
-                <Text style={styles.seasonText}>{item.season}</Text>
-              </View>
-            </View>
-          )}
-        </View>
-      )}
+      {/* Piece Info Section */}
+      <View style={styles.infoArea}>
+        <Text style={styles.name} numberOfLines={1}>
+          {displayName}
+        </Text>
+        <Text style={styles.subText} numberOfLines={1}>
+          {subInfo}
+        </Text>
+      </View>
     </Pressable>
   );
 });
@@ -207,44 +140,31 @@ const makeStyles = (c: Palette) =>
     card: {
       width: '48.5%',
       backgroundColor: c.cardBg,
-      borderRadius: shapes.xxl,
+      borderRadius: 20,
       borderWidth: 1,
       borderColor: c.outlineVariant,
       overflow: 'hidden',
-      marginBottom: 16,
+      marginBottom: 14,
+      padding: 6,
       shadowColor: '#000',
-      shadowOpacity: 0.05,
-      shadowRadius: 10,
-      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.04,
+      shadowRadius: 8,
+      shadowOffset: { width: 0, height: 2 },
       elevation: 2,
     },
     cardPressed: {
       opacity: 0.9,
-      transform: [{ scale: 0.97 }],
+      transform: [{ scale: 0.98 }],
     },
-    imageWrap: {
+    imagePedestal: {
       width: '100%',
-      aspectRatio: 3 / 4,
-      maxHeight: 220,
-      backgroundColor: c.cardBg,
-      position: 'relative',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: 6,
-    },
-    imageWrapFull: {
-      aspectRatio: 3 / 4,
-      maxHeight: 235,
-      padding: 8,
-    },
-    studioPedestal: {
-      width: '100%',
-      height: '100%',
+      aspectRatio: 3 / 4.1,
       backgroundColor: c.imageBg,
-      borderRadius: shapes.lg,
+      borderRadius: 16,
       alignItems: 'center',
       justifyContent: 'center',
-      padding: 6,
+      padding: 10,
+      position: 'relative',
       overflow: 'hidden',
     },
     image: {
@@ -257,85 +177,44 @@ const makeStyles = (c: Palette) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
-    heartShadow: {
+    cornerHeartBtn: {
       position: 'absolute',
-      opacity: 0.8,
-    },
-    heartForeground: {
-      position: 'relative',
-    },
-    categoryPill: {
-      position: 'absolute',
-      top: 10,
-      left: 10,
-      paddingHorizontal: 7,
-      paddingVertical: 2.5,
-      borderRadius: shapes.full,
-      zIndex: 2,
-    },
-    categoryPillText: {
-      fontFamily: fonts.bold,
-      fontSize: 9.5,
-      letterSpacing: 0.2,
-      includeFontPadding: false,
-    },
-    cornerFavoriteBtn: {
-      position: 'absolute',
-      bottom: 10,
-      right: 10,
-      width: 26,
-      height: 26,
-      borderRadius: 13,
-      backgroundColor: 'rgba(255, 255, 255, 0.92)',
+      bottom: 8,
+      right: 8,
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: c.cardBg,
       alignItems: 'center',
       justifyContent: 'center',
       shadowColor: '#000',
       shadowOpacity: 0.12,
       shadowRadius: 4,
-      shadowOffset: { width: 0, height: 1 },
+      shadowOffset: { width: 0, height: 1.5 },
       elevation: 3,
       borderWidth: 0.5,
-      borderColor: 'rgba(0, 0, 0, 0.06)',
-    },
-    cornerFavoriteBtnActive: {
-      backgroundColor: '#FFFFFF',
+      borderColor: c.outlineVariant,
     },
     btnPressed: {
       transform: [{ scale: 0.9 }],
       opacity: 0.8,
     },
     infoArea: {
-      paddingHorizontal: 14,
-      paddingTop: 4,
-      paddingBottom: 12,
-    },
-    nameRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
+      paddingHorizontal: 6,
+      paddingTop: 8,
+      paddingBottom: 4,
     },
     name: {
-      flex: 1,
-      fontFamily: fonts.displayMedium,
+      fontFamily: fonts.bold,
       color: c.onSurface,
       fontSize: 14,
-      letterSpacing: 0.1,
+      letterSpacing: -0.1,
+      marginBottom: 2,
     },
-    metaRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'flex-start',
-      marginTop: 3,
-    },
-    seasonBadge: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 3.5,
-    },
-    seasonText: {
-      fontFamily: fonts.semiBold,
+    subText: {
+      fontFamily: fonts.medium,
       color: c.onSurfaceVariant,
-      fontSize: 10.5,
-      letterSpacing: 0.3,
+      fontSize: 11.5,
+      letterSpacing: -0.1,
     },
   });
