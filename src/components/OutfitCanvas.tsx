@@ -87,6 +87,9 @@ function DraggablePiece({
   onMoveEnd,
   palette,
 }: DraggablePieceProps) {
+  const callbacksRef = useRef({ onSelect, onRemove, onBringToFront, onUpdateScale, onMoveEnd });
+  callbacksRef.current = { onSelect, onRemove, onBringToFront, onUpdateScale, onMoveEnd };
+
   const pan = useConst(() => new Animated.ValueXY({ x: data.x, y: data.y }));
   const lastOffset = useRef({ x: data.x, y: data.y });
 
@@ -118,7 +121,7 @@ function DraggablePiece({
         return Math.abs(gestureState.dx) > 3 || Math.abs(gestureState.dy) > 3;
       },
       onPanResponderGrant: (evt) => {
-        onSelect();
+        callbacksRef.current.onSelect();
 
         const touches = evt.nativeEvent.touches;
         if (touches && touches.length >= 2) {
@@ -143,13 +146,14 @@ function DraggablePiece({
         const touches = evt.nativeEvent.touches;
 
         if (touches && touches.length >= 2) {
-          // Two-finger Pinch
+          // Two-finger Pinch to zoom / resize
           const currentDist = Math.hypot(
             touches[0].pageX - touches[1].pageX,
             touches[0].pageY - touches[1].pageY
           );
 
-          if (!initialPinchDistRef.current) {
+          if (!isPinchingRef.current || !initialPinchDistRef.current) {
+            isPinchingRef.current = true;
             initialPinchDistRef.current = Math.max(currentDist, 1);
             pinchStartScaleRef.current = currentScaleRef.current;
           } else {
@@ -165,7 +169,7 @@ function DraggablePiece({
       },
       onPanResponderRelease: (_, gestureState) => {
         if (isPinchingRef.current) {
-          onUpdateScale(currentScaleRef.current);
+          callbacksRef.current.onUpdateScale(currentScaleRef.current);
           isPinchingRef.current = false;
           initialPinchDistRef.current = null;
         } else {
@@ -174,7 +178,7 @@ function DraggablePiece({
             x: lastOffset.current.x + gestureState.dx,
             y: lastOffset.current.y + gestureState.dy,
           };
-          onMoveEnd(lastOffset.current.x, lastOffset.current.y);
+          callbacksRef.current.onMoveEnd(lastOffset.current.x, lastOffset.current.y);
         }
       },
     })
@@ -191,16 +195,25 @@ function DraggablePiece({
         startDragScaleRef.current = currentScaleRef.current;
       },
       onPanResponderMove: (_, gestureState) => {
-        const delta = (gestureState.dx + gestureState.dy) / 150;
+        const delta = (gestureState.dx + gestureState.dy) / 140;
         const newScale = Math.min(Math.max(startDragScaleRef.current + delta, 0.45), 2.8);
         scaleAnim.setValue(newScale);
         currentScaleRef.current = newScale;
+        callbacksRef.current.onUpdateScale(newScale);
       },
       onPanResponderRelease: () => {
-        onUpdateScale(currentScaleRef.current);
+        callbacksRef.current.onUpdateScale(currentScaleRef.current);
       },
     })
   );
+
+  const handleStepScale = (delta: number) => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const newScale = Math.min(Math.max(currentScaleRef.current + delta, 0.45), 2.8);
+    scaleAnim.setValue(newScale);
+    currentScaleRef.current = newScale;
+    onUpdateScale(newScale);
+  };
 
   const baseWidth = 145;
   const baseHeight = 180;
@@ -241,18 +254,40 @@ function DraggablePiece({
           resizeMode="contain"
         />
 
-        {/* Selected Controls */}
+        {/* Selected Controls Header & Corner Handle */}
         {isSelected && (
           <>
-            {/* Top Action Buttons */}
+            {/* Top Action & Scale Buttons */}
             <View style={styles.floatingControlsWrap} pointerEvents="box-none">
+              <Pressable
+                onPress={(e) => {
+                  e.stopPropagation();
+                  handleStepScale(-0.15);
+                }}
+                hitSlop={10}
+                style={[styles.miniControlBtn, { backgroundColor: palette.primary }]}
+              >
+                <Ionicons name="remove" size={13} color={palette.onPrimary} />
+              </Pressable>
+
+              <Pressable
+                onPress={(e) => {
+                  e.stopPropagation();
+                  handleStepScale(0.15);
+                }}
+                hitSlop={10}
+                style={[styles.miniControlBtn, { backgroundColor: palette.primary }]}
+              >
+                <Ionicons name="add" size={13} color={palette.onPrimary} />
+              </Pressable>
+
               <Pressable
                 onPress={(e) => {
                   e.stopPropagation();
                   void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   onBringToFront();
                 }}
-                hitSlop={14}
+                hitSlop={10}
                 style={[styles.miniControlBtn, { backgroundColor: palette.primary }]}
               >
                 <Ionicons name="arrow-up" size={12} color={palette.onPrimary} />
@@ -264,7 +299,7 @@ function DraggablePiece({
                   void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                   onRemove();
                 }}
-                hitSlop={14}
+                hitSlop={10}
                 style={[styles.miniControlBtn, { backgroundColor: palette.error }]}
               >
                 <Ionicons name="close" size={12} color="#FFFFFF" />
@@ -540,7 +575,7 @@ export function OutfitCanvas({ items }: Props) {
         <View style={styles.toolbarLeft}>
           <Text style={styles.canvasTitle}>Studio Canvas</Text>
           <Text style={styles.canvasSubtitle} numberOfLines={1}>
-            Pinch to resize or pull corner handle
+            Pinch, pull corner, or tap -/+ to resize
           </Text>
         </View>
 
@@ -605,7 +640,7 @@ export function OutfitCanvas({ items }: Props) {
             </View>
             <Text style={styles.hintTitle}>Interactive Lookbook Studio</Text>
             <Text style={styles.hintText}>
-              Tap pieces below to add cutouts. Drag anywhere, pinch with two fingers or pull the corner handle to resize.
+              Tap pieces below to add cutouts. Drag anywhere, pinch with two fingers, pull the corner handle, or tap -/+ to resize.
             </Text>
           </View>
         ) : (
@@ -832,16 +867,16 @@ const styles = StyleSheet.create({
   },
   floatingControlsWrap: {
     position: 'absolute',
-    top: -16,
+    top: -18,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
     zIndex: 999,
   },
   miniControlBtn: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -852,17 +887,17 @@ const styles = StyleSheet.create({
   },
   cornerHandle: {
     position: 'absolute',
-    bottom: -8,
-    right: -8,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    bottom: -10,
+    right: -10,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
     shadowOpacity: 0.25,
-    shadowRadius: 3,
-    elevation: 6,
+    shadowRadius: 4,
+    elevation: 7,
   },
 });
 
