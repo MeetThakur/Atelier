@@ -21,7 +21,6 @@ import { Header } from './src/components/Header';
 import { SearchBar } from './src/components/SearchBar';
 import { CategoryChips } from './src/components/CategoryChips';
 import { FilterModal } from './src/components/FilterModal';
-import { SectionHeader } from './src/components/SectionHeader';
 import { ItemCard } from './src/components/ItemCard';
 import { ItemDetailModal } from './src/components/ItemDetailModal';
 import { ItemActionSheet } from './src/components/ItemActionSheet';
@@ -180,40 +179,33 @@ function AtelierApp() {
               value={category}
               onChange={setCategory}
               counts={loaded ? categoryCounts : undefined}
+              activeFilterCount={activeFilterCount}
+              onOpenFilter={() => setFilterModalOpen(true)}
+              sortMode={sortMode}
+              onSortChange={setSortMode}
             />
 
-            {/* Active Sub-Filter Badges */}
-            {activeFilterCount > 0 && (
+            {/* Active Sub-Filter Badges (compact) */}
+            {activeFilterCount > 0 && season !== 'All' && (
               <View style={styles.activeFiltersRow}>
-                {season !== 'All' && (
-                  <Pressable
-                    onPress={() => setSeason('All')}
-                    style={styles.activeFilterPill}
-                  >
-                    <Ionicons
-                      name={SEASON_ICONS[season] || 'sparkles-outline'}
-                      size={12}
-                      color={c.onPrimaryContainer}
-                    />
-                    <Text style={styles.activeFilterText}>{season}</Text>
-                    <Ionicons name="close" size={12} color={c.onPrimaryContainer} />
-                  </Pressable>
-                )}
+                <Pressable
+                  onPress={() => setSeason('All')}
+                  style={styles.activeFilterPill}
+                >
+                  <Ionicons
+                    name={SEASON_ICONS[season] || 'sparkles-outline'}
+                    size={12}
+                    color={c.gold}
+                  />
+                  <Text style={styles.activeFilterText}>Season: {season}</Text>
+                  <Ionicons name="close-circle" size={13} color={c.onPrimaryContainer} />
+                </Pressable>
 
                 <Pressable onPress={() => setSeason('All')} style={styles.clearFiltersBtn}>
-                  <Text style={styles.clearFiltersText}>Clear</Text>
+                  <Text style={styles.clearFiltersText}>Reset</Text>
                 </Pressable>
               </View>
             )}
-
-            <SectionHeader
-              title={category === 'All' ? 'Your pieces' : category}
-              count={visibleItems.length}
-              sortMode={sortMode}
-              onSortChange={setSortMode}
-              activeFilterCount={activeFilterCount}
-              onOpenFilter={() => setFilterModalOpen(true)}
-            />
 
             <FlatList
               data={visibleItems}
