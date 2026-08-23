@@ -348,7 +348,7 @@ const makeStyles = (c: Palette) =>
       justifyContent: 'space-between',
     },
     grid: {
-      paddingBottom: 120,
+      paddingBottom: 72,
     },
     activeFiltersRow: {
       flexDirection: 'row',

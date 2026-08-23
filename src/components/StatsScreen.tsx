@@ -231,7 +231,7 @@ const makeStyles = (c: Palette) =>
     scrollContent: {
       paddingHorizontal: 18,
       paddingTop: 16,
-      paddingBottom: 120,
+      paddingBottom: 24,
     },
     header: {
       marginBottom: 20,

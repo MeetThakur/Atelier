@@ -772,10 +772,10 @@ const makeStyles = (c: Palette) =>
       borderWidth: 1,
       borderColor: c.outlineVariant,
       paddingTop: 10,
-      paddingBottom: 85,
+      paddingBottom: 16,
     },
     drawerCollapsed: {
-      paddingBottom: 85,
+      paddingBottom: 10,
     },
     drawerHeader: {
       alignItems: 'center',

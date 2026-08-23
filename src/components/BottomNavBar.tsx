@@ -1,6 +1,7 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { AppTab } from '../types';
 import { useTheme, fonts, shapes, type Palette } from '../theme';
 
@@ -11,7 +12,8 @@ type Props = {
 
 export function BottomNavBar({ activeTab, onTabChange }: Props) {
   const c = useTheme();
-  const styles = makeStyles(c);
+  const insets = useSafeAreaInsets();
+  const styles = makeStyles(c, insets.bottom);
 
   const handleTab = (tab: AppTab) => {
     if (tab !== activeTab) {
@@ -21,7 +23,7 @@ export function BottomNavBar({ activeTab, onTabChange }: Props) {
   };
 
   return (
-    <View style={styles.navContainer}>
+    <View style={styles.dockWrap}>
       <View style={styles.navPill}>
         <Pressable
           onPress={() => handleTab('archive')}
@@ -96,37 +98,38 @@ export function BottomNavBar({ activeTab, onTabChange }: Props) {
   );
 }
 
-const makeStyles = (c: Palette) =>
+const makeStyles = (c: Palette, bottomInset: number) =>
   StyleSheet.create({
-    navContainer: {
-      position: 'absolute',
-      bottom: 20,
-      left: 0,
-      right: 0,
+    dockWrap: {
+      backgroundColor: c.surface,
+      borderTopWidth: 1,
+      borderTopColor: c.outlineVariant,
+      paddingTop: 8,
+      paddingBottom: Math.max(bottomInset, Platform.OS === 'ios' ? 14 : 10),
+      paddingHorizontal: 18,
       alignItems: 'center',
-      pointerEvents: 'box-none',
     },
     navPill: {
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: c.cardBg,
       borderRadius: shapes.full,
-      padding: 4,
+      padding: 3.5,
       borderWidth: 1,
       borderColor: c.outlineVariant,
       shadowColor: '#000',
-      shadowOpacity: 0.16,
-      shadowRadius: 16,
-      shadowOffset: { width: 0, height: 6 },
-      elevation: 8,
-      gap: 3,
+      shadowOpacity: 0.08,
+      shadowRadius: 10,
+      shadowOffset: { width: 0, height: 3 },
+      elevation: 4,
+      gap: 4,
     },
     tabItem: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 5,
-      paddingHorizontal: 15,
-      paddingVertical: 8.5,
+      paddingHorizontal: 16,
+      paddingVertical: 7.5,
       borderRadius: shapes.full,
     },
     tabItemActive: {

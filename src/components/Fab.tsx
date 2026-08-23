@@ -23,7 +23,7 @@ export function Fab({ onPress }: Props) {
       style={({ pressed }) => [styles.fab, pressed && styles.pressed]}
     >
       <View style={styles.iconWrap}>
-        <Ionicons name="add" size={18} color={c.onPrimary} />
+        <Ionicons name="add" size={17} color={c.onPrimary} />
       </View>
       <Text style={styles.label}>Add Piece</Text>
     </Pressable>
@@ -34,27 +34,27 @@ const makeStyles = (c: Palette) =>
   StyleSheet.create({
     fab: {
       position: 'absolute',
-      right: 20,
-      bottom: 28,
+      right: 18,
+      bottom: 18,
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 8,
-      height: 52,
-      paddingHorizontal: 18,
+      gap: 7,
+      height: 48,
+      paddingHorizontal: 16,
       borderRadius: shapes.full,
       backgroundColor: c.primary,
       shadowColor: '#000',
       shadowOpacity: 0.25,
-      shadowRadius: 16,
-      shadowOffset: { width: 0, height: 8 },
-      elevation: 7,
+      shadowRadius: 14,
+      shadowOffset: { width: 0, height: 6 },
+      elevation: 6,
       borderWidth: 1,
       borderColor: 'rgba(255, 255, 255, 0.12)',
     },
     iconWrap: {
-      width: 26,
-      height: 26,
-      borderRadius: 13,
+      width: 24,
+      height: 24,
+      borderRadius: 12,
       backgroundColor: 'rgba(255, 255, 255, 0.18)',
       alignItems: 'center',
       justifyContent: 'center',
@@ -62,8 +62,8 @@ const makeStyles = (c: Palette) =>
     label: {
       fontFamily: fonts.bold,
       color: c.onPrimary,
-      fontSize: 14.5,
-      letterSpacing: 0.3,
+      fontSize: 13.5,
+      letterSpacing: 0.2,
     },
     pressed: {
       transform: [{ scale: 0.94 }],
