@@ -20,7 +20,6 @@ import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { File } from 'expo-file-system';
 import { captureRef } from 'react-native-view-shot';
-import * as MediaLibrary from 'expo-media-library';
 import type { Category, Item, SavedOutfit } from '../types';
 import { OUTFITS_STORAGE_KEY, categories } from '../constants';
 import { useTheme, fonts, shapes, type Palette } from '../theme';
@@ -298,7 +297,6 @@ export function OutfitCanvas({ items }: Props) {
   const [isExporting, setIsExporting] = useState(false);
   const [exportedImageUri, setExportedImageUri] = useState<string | null>(null);
   const [showExportModal, setShowExportModal] = useState(false);
-  const [isSavedToGallery, setIsSavedToGallery] = useState(false);
 
   const canvasRef = useRef<View>(null);
   const nextZIndex = useRef(10);
@@ -479,7 +477,6 @@ export function OutfitCanvas({ items }: Props) {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setSelectedInstanceId(null);
     setIsExporting(true);
-    setIsSavedToGallery(false);
 
     try {
       if (!canvasRef.current) throw new Error('Canvas ref unattached');
@@ -497,25 +494,10 @@ export function OutfitCanvas({ items }: Props) {
     }
   };
 
-  const handleSaveToGallery = async () => {
-    if (!exportedImageUri) return;
-    try {
-      const { status } = await MediaLibrary.requestPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission Needed', 'Please allow gallery access to save your lookbook photos.');
-        return;
-      }
-      await MediaLibrary.saveToLibraryAsync(exportedImageUri);
-      setIsSavedToGallery(true);
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch {
-      Alert.alert('Error', 'Could not save to gallery. Please try again.');
-    }
-  };
-
   const handleNativeShare = async () => {
     if (!exportedImageUri) return;
     try {
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       await Share.share({
         url: exportedImageUri,
         title: 'Atelier Lookbook Styling',
@@ -959,27 +941,15 @@ export function OutfitCanvas({ items }: Props) {
 
             <View style={styles.exportActionsRow}>
               <Pressable
-                onPress={handleSaveToGallery}
-                style={[styles.exportActionBtn, isSavedToGallery && styles.exportActionBtnSuccess]}
+                onPress={() => setShowExportModal(false)}
+                style={[styles.exportActionBtn, styles.exportDoneBtn]}
               >
-                <Ionicons
-                  name={isSavedToGallery ? 'checkmark-circle' : 'download-outline'}
-                  size={18}
-                  color={isSavedToGallery ? '#FFFFFF' : c.onSurface}
-                />
-                <Text
-                  style={[
-                    styles.exportActionBtnText,
-                    isSavedToGallery && styles.exportActionBtnTextSuccess,
-                  ]}
-                >
-                  {isSavedToGallery ? 'Saved to Photos' : 'Save to Photos'}
-                </Text>
+                <Text style={styles.exportDoneBtnText}>Done</Text>
               </Pressable>
 
               <Pressable onPress={handleNativeShare} style={[styles.exportActionBtn, styles.exportShareBtn]}>
                 <Ionicons name="share-social" size={18} color={c.onPrimary} />
-                <Text style={styles.exportShareBtnText}>Share</Text>
+                <Text style={styles.exportShareBtnText}>Share Lookbook</Text>
               </Pressable>
             </View>
           </View>
@@ -1590,21 +1560,19 @@ const makeStyles = (c: Palette) =>
       justifyContent: 'center',
       gap: 8,
     },
-    exportActionBtnSuccess: {
-      backgroundColor: '#2E7D32',
-      borderColor: '#2E7D32',
+    exportDoneBtn: {
+      backgroundColor: c.surfaceContainerHigh,
+      borderColor: c.outlineVariant,
     },
-    exportActionBtnText: {
+    exportDoneBtnText: {
       fontFamily: fonts.bold,
-      color: c.onSurface,
+      color: c.onSurfaceVariant,
       fontSize: 13.5,
-    },
-    exportActionBtnTextSuccess: {
-      color: '#FFFFFF',
     },
     exportShareBtn: {
       backgroundColor: c.primary,
       borderColor: c.primary,
+      flex: 1.4,
     },
     exportShareBtnText: {
       fontFamily: fonts.bold,
