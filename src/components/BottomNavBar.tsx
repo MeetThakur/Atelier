@@ -33,7 +33,7 @@ export function BottomNavBar({ activeTab, onTabChange }: Props) {
         >
           <Ionicons
             name={activeTab === 'archive' ? 'grid' : 'grid-outline'}
-            size={17}
+            size={16}
             color={activeTab === 'archive' ? c.onPrimary : c.onSurfaceVariant}
           />
           <Text
@@ -56,7 +56,7 @@ export function BottomNavBar({ activeTab, onTabChange }: Props) {
         >
           <Ionicons
             name={activeTab === 'canvas' ? 'color-palette' : 'color-palette-outline'}
-            size={17}
+            size={16}
             color={activeTab === 'canvas' ? c.onPrimary : c.onSurfaceVariant}
           />
           <Text
@@ -65,7 +65,30 @@ export function BottomNavBar({ activeTab, onTabChange }: Props) {
               activeTab === 'canvas' ? styles.tabLabelActive : styles.tabLabelInactive,
             ]}
           >
-            Studio Canvas
+            Studio
+          </Text>
+        </Pressable>
+
+        <Pressable
+          onPress={() => handleTab('stats')}
+          style={({ pressed }) => [
+            styles.tabItem,
+            activeTab === 'stats' && styles.tabItemActive,
+            pressed && styles.pressed,
+          ]}
+        >
+          <Ionicons
+            name={activeTab === 'stats' ? 'stats-chart' : 'stats-chart-outline'}
+            size={16}
+            color={activeTab === 'stats' ? c.onPrimary : c.onSurfaceVariant}
+          />
+          <Text
+            style={[
+              styles.tabLabel,
+              activeTab === 'stats' ? styles.tabLabelActive : styles.tabLabelInactive,
+            ]}
+          >
+            Stats
           </Text>
         </Pressable>
       </View>
@@ -96,21 +119,21 @@ const makeStyles = (c: Palette) =>
       shadowRadius: 16,
       shadowOffset: { width: 0, height: 6 },
       elevation: 8,
-      gap: 4,
+      gap: 3,
     },
     tabItem: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 6,
-      paddingHorizontal: 18,
-      paddingVertical: 9,
+      gap: 5,
+      paddingHorizontal: 15,
+      paddingVertical: 8.5,
       borderRadius: shapes.full,
     },
     tabItemActive: {
       backgroundColor: c.primary,
     },
     tabLabel: {
-      fontSize: 13,
+      fontSize: 12.5,
       includeFontPadding: false,
     },
     tabLabelActive: {

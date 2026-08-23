@@ -29,6 +29,7 @@ import { EmptyState } from './src/components/EmptyState';
 import { Fab } from './src/components/Fab';
 import { AddItemModal } from './src/components/AddItemModal';
 import { OutfitCanvas } from './src/components/OutfitCanvas';
+import { StatsScreen } from './src/components/StatsScreen';
 import { BottomNavBar } from './src/components/BottomNavBar';
 import { useCloset } from './src/hooks/useCloset';
 import { greeting } from './src/lib/format';
@@ -131,7 +132,7 @@ function AtelierApp() {
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
 
-      {activeTab === 'archive' ? (
+      {activeTab === 'archive' && (
         <View style={styles.container}>
           {saveFailed && (
             <View style={styles.errorBanner}>
@@ -231,9 +232,11 @@ function AtelierApp() {
 
           <Fab onPress={() => setModalOpen(true)} />
         </View>
-      ) : (
-        <OutfitCanvas items={items} />
       )}
+
+      {activeTab === 'canvas' && <OutfitCanvas items={items} />}
+
+      {activeTab === 'stats' && <StatsScreen items={items} />}
 
       {/* Floating Bottom Nav */}
       <BottomNavBar activeTab={activeTab} onTabChange={setActiveTab} />

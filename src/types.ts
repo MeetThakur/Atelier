@@ -5,7 +5,7 @@ export type Season = 'All-Season' | 'Spring' | 'Summer' | 'Fall' | 'Winter';
 
 export type SortMode = 'newest' | 'favorites' | 'name';
 
-export type AppTab = 'archive' | 'canvas';
+export type AppTab = 'archive' | 'canvas' | 'stats';
 
 export type Item = {
   id: string;
