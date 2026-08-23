@@ -35,6 +35,21 @@ export function ItemDetailModal({
 
   if (!item) return null;
 
+  const isGenericName =
+    !item.name ||
+    item.name === 'Piece' ||
+    item.name === 'Tops' ||
+    item.name === 'Bottoms' ||
+    item.name === 'Dresses' ||
+    item.name === 'Shoes' ||
+    item.name.startsWith('Piece ') ||
+    item.name.startsWith('Tops ') ||
+    item.name.startsWith('Bottoms ') ||
+    item.name.startsWith('Dresses ') ||
+    item.name.startsWith('Shoes ');
+
+  const hasCustomName = !isGenericName;
+
   const handleFavoritePress = () => {
     void Haptics.selectionAsync();
     onToggleFavorite(item.id);
@@ -42,26 +57,24 @@ export function ItemDetailModal({
 
   const handleDeletePress = () => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    Alert.alert('Remove Piece', `"${displayName}" will be deleted from your atelier.`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Remove',
-        style: 'destructive',
-        onPress: () => {
-          onClose();
-          onRemove(item);
+    Alert.alert(
+      'Remove Piece',
+      hasCustomName
+        ? `"${item.name}" will be deleted from your atelier.`
+        : 'This piece will be deleted from your atelier.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: () => {
+            onClose();
+            onRemove(item);
+          },
         },
-      },
-    ]);
+      ]
+    );
   };
-
-  const displayName =
-    item.name === 'Tops' ||
-    item.name === 'Bottoms' ||
-    item.name === 'Dresses' ||
-    item.name === 'Shoes'
-      ? 'Piece'
-      : item.name;
 
   return (
     <Modal
@@ -123,10 +136,10 @@ export function ItemDetailModal({
                 </View>
               )}
 
-              <Text style={styles.title}>{displayName}</Text>
+              {hasCustomName && <Text style={styles.title}>{item.name}</Text>}
 
               {/* Actions Section */}
-              <View style={styles.actionButtons}>
+              <View style={[styles.actionButtons, !hasCustomName && styles.actionButtonsOnly]}>
                 <Pressable
                   onPress={handleFavoritePress}
                   style={({ pressed }) => [
@@ -256,10 +269,13 @@ const makeStyles = (c: Palette) =>
       color: c.onSurface,
       fontSize: 24,
       letterSpacing: 0.2,
-      marginBottom: 20,
+      marginBottom: 16,
     },
     actionButtons: {
       gap: 10,
+    },
+    actionButtonsOnly: {
+      marginTop: 4,
     },
     favoriteActionButton: {
       flexDirection: 'row',

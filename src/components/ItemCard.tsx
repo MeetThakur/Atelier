@@ -84,13 +84,21 @@ export const ItemCard = memo(function ItemCard({
     onOpenMenu();
   };
 
-  const displayName =
+  const isGenericName =
+    !item.name ||
+    item.name === 'Piece' ||
     item.name === 'Tops' ||
     item.name === 'Bottoms' ||
     item.name === 'Dresses' ||
-    item.name === 'Shoes'
-      ? 'Piece'
-      : item.name;
+    item.name === 'Shoes' ||
+    item.name.startsWith('Piece ') ||
+    item.name.startsWith('Tops ') ||
+    item.name.startsWith('Bottoms ') ||
+    item.name.startsWith('Dresses ') ||
+    item.name.startsWith('Shoes ');
+
+  const hasCustomName = !isGenericName;
+  const hasSeason = item.season && item.season !== 'All-Season';
 
   return (
     <Pressable
@@ -99,7 +107,7 @@ export const ItemCard = memo(function ItemCard({
       delayLongPress={350}
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
     >
-      <View style={styles.imageWrap}>
+      <View style={[styles.imageWrap, !hasCustomName && !hasSeason && styles.imageWrapFull]}>
         <Image source={{ uri: item.image }} style={styles.image} resizeMode="contain" />
 
         {/* Double-tap Pop Animated Heart */}
@@ -116,31 +124,39 @@ export const ItemCard = memo(function ItemCard({
           <Ionicons name="heart" size={68} color="#FFFFFF" style={styles.heartShadow} />
           <Ionicons name="heart" size={64} color="#E0534C" style={styles.heartForeground} />
         </Animated.View>
-      </View>
 
-      <View style={styles.infoArea}>
-        <View style={styles.nameRow}>
-          <Text style={styles.name} numberOfLines={1}>
-            {displayName}
-          </Text>
-          {item.favorite && (
-            <Ionicons name="heart" size={14} color="#E0534C" style={styles.miniHeart} />
-          )}
-        </View>
-
-        {item.season && item.season !== 'All-Season' && (
-          <View style={styles.metaRow}>
-            <View style={styles.seasonBadge}>
-              <Ionicons
-                name={SEASON_ICONS[item.season] || 'sparkles-outline'}
-                size={11}
-                color={c.onSurfaceVariant}
-              />
-              <Text style={styles.seasonText}>{item.season}</Text>
-            </View>
+        {/* Subtle corner favorite indicator when favorited */}
+        {item.favorite && (
+          <View style={styles.cornerFavoriteDot}>
+            <Ionicons name="heart" size={13} color="#E0534C" />
           </View>
         )}
       </View>
+
+      {(hasCustomName || hasSeason) && (
+        <View style={styles.infoArea}>
+          {hasCustomName && (
+            <View style={styles.nameRow}>
+              <Text style={styles.name} numberOfLines={1}>
+                {item.name}
+              </Text>
+            </View>
+          )}
+
+          {hasSeason && (
+            <View style={styles.metaRow}>
+              <View style={styles.seasonBadge}>
+                <Ionicons
+                  name={SEASON_ICONS[item.season!] || 'sparkles-outline'}
+                  size={11}
+                  color={c.onSurfaceVariant}
+                />
+                <Text style={styles.seasonText}>{item.season}</Text>
+              </View>
+            </View>
+          )}
+        </View>
+      )}
     </Pressable>
   );
 });
@@ -166,13 +182,17 @@ const makeStyles = (c: Palette) =>
       transform: [{ scale: 0.98 }],
     },
     imageWrap: {
-      height: 220,
+      height: 200,
       width: '100%',
       backgroundColor: c.cardBg,
       position: 'relative',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: 6,
+      padding: 8,
+    },
+    imageWrapFull: {
+      height: 220,
+      padding: 10,
     },
     image: {
       width: '100%',
@@ -191,32 +211,44 @@ const makeStyles = (c: Palette) =>
     heartForeground: {
       position: 'relative',
     },
+    cornerFavoriteDot: {
+      position: 'absolute',
+      bottom: 8,
+      right: 8,
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      backgroundColor: 'rgba(255, 255, 255, 0.92)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: '#000',
+      shadowOpacity: 0.12,
+      shadowRadius: 3,
+      shadowOffset: { width: 0, height: 1 },
+      elevation: 2,
+    },
     infoArea: {
       paddingHorizontal: 12,
-      paddingTop: 10,
-      paddingBottom: 12,
+      paddingTop: 6,
+      paddingBottom: 10,
     },
     nameRow: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      gap: 6,
     },
     name: {
       flex: 1,
       fontFamily: fonts.displayMedium,
       color: c.onSurface,
-      fontSize: 14.5,
+      fontSize: 14,
       letterSpacing: 0.1,
-    },
-    miniHeart: {
-      marginLeft: 4,
     },
     metaRow: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'flex-start',
-      marginTop: 4,
+      marginTop: 3,
     },
     seasonBadge: {
       flexDirection: 'row',

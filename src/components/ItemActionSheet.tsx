@@ -35,6 +35,21 @@ export function ItemActionSheet({
 
   if (!item) return null;
 
+  const isGenericName =
+    !item.name ||
+    item.name === 'Piece' ||
+    item.name === 'Tops' ||
+    item.name === 'Bottoms' ||
+    item.name === 'Dresses' ||
+    item.name === 'Shoes' ||
+    item.name.startsWith('Piece ') ||
+    item.name.startsWith('Tops ') ||
+    item.name.startsWith('Bottoms ') ||
+    item.name.startsWith('Dresses ') ||
+    item.name.startsWith('Shoes ');
+
+  const hasCustomName = !isGenericName;
+
   const handleDetails = () => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onClose();
@@ -49,26 +64,24 @@ export function ItemActionSheet({
 
   const handleDelete = () => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    Alert.alert('Remove Piece', `"${displayName}" will be deleted from your atelier.`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Remove',
-        style: 'destructive',
-        onPress: () => {
-          onClose();
-          onRemove(item);
+    Alert.alert(
+      'Remove Piece',
+      hasCustomName
+        ? `"${item.name}" will be deleted from your atelier.`
+        : 'This piece will be deleted from your atelier.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: () => {
+            onClose();
+            onRemove(item);
+          },
         },
-      },
-    ]);
+      ]
+    );
   };
-
-  const displayName =
-    item.name === 'Tops' ||
-    item.name === 'Bottoms' ||
-    item.name === 'Dresses' ||
-    item.name === 'Shoes'
-      ? 'Piece'
-      : item.name;
 
   return (
     <Modal
@@ -87,9 +100,11 @@ export function ItemActionSheet({
           <View style={styles.previewRow}>
             <Image source={{ uri: item.image }} style={styles.thumb} resizeMode="contain" />
             <View style={styles.previewInfo}>
-              <Text style={styles.pieceName} numberOfLines={1}>
-                {displayName}
-              </Text>
+              {hasCustomName && (
+                <Text style={styles.pieceName} numberOfLines={1}>
+                  {item.name}
+                </Text>
+              )}
               {item.season && item.season !== 'All-Season' && (
                 <View style={styles.badgeRow}>
                   <Text style={styles.pieceSeason}>{item.season}</Text>
@@ -197,7 +212,7 @@ const makeStyles = (c: Palette) =>
       width: 52,
       height: 64,
       borderRadius: shapes.sm,
-      backgroundColor: c.surfaceContainerHighest,
+      backgroundColor: c.cardBg,
     },
     previewInfo: {
       flex: 1,
