@@ -11,8 +11,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { ClothingCategory, Item, SavedOutfit, Season } from '../types';
-import { OUTFITS_STORAGE_KEY, SEASON_ICONS, clothingCategories, categories } from '../constants';
+import type { ClothingCategory, Item, SavedOutfit } from '../types';
+import { OUTFITS_STORAGE_KEY, clothingCategories, categories } from '../constants';
 import { useTheme, fonts, shapes, type Palette } from '../theme';
 
 const DAILY_LOGS_STORAGE_KEY = '@atelier_daily_outfit_logs_v1';
@@ -110,22 +110,6 @@ export function StatsScreen({ items }: Props) {
     }
   }
 
-  // Season Breakdown
-  const seasonCounts: Record<Season, number> = {
-    'All-Season': 0,
-    Spring: 0,
-    Summer: 0,
-    Fall: 0,
-    Winter: 0,
-  };
-
-  for (const item of items) {
-    const s = item.season || 'All-Season';
-    if (seasonCounts[s] !== undefined) {
-      seasonCounts[s]++;
-    }
-  }
-
   // Wear Log Metrics
   const totalWears = items.reduce((acc, item) => acc + (item.wearCount || 0), 0);
   const mostWornPieces = [...items]
@@ -142,33 +126,6 @@ export function StatsScreen({ items }: Props) {
 
   const potentialLooks =
     topsCount * bottomsCount * (shoesCount || 1) + dressesCount * (shoesCount || 1);
-
-  // Dynamic Stylist Insight
-  let insightHeadline = 'Wardrobe in Inception';
-  let insightBody =
-    'Photograph tops, trousers, and shoes to uncover your personal archive balance and unlock pairing suggestions.';
-
-  if (totalItems >= 1) {
-    if (shoesCount === 0 && (topsCount > 0 || bottomsCount > 0 || dressesCount > 0)) {
-      insightHeadline = 'Footwear Gap';
-      insightBody =
-        'Add a pair of shoes to your archive to unlock full head-to-toe 3-piece looks on the Studio Canvas.';
-    } else if (bottomsCount === 0 && topsCount > 0) {
-      insightHeadline = 'Bottoms Needed';
-      insightBody =
-        'Curate trousers, skirts, or denim to unlock full styling versatility for your tops.';
-    } else if (topsCount === 0 && bottomsCount > 0) {
-      insightHeadline = 'Tops Needed';
-      insightBody = 'Add shirts, knits, or tees to balance your bottom collection.';
-    } else if (topsCount > 0 && bottomsCount > 0) {
-      const dominantSeason = (Object.keys(seasonCounts) as Season[]).reduce((a, b) =>
-        seasonCounts[a] > seasonCounts[b] ? a : b
-      );
-      const ratio = `${topsCount}:${bottomsCount}`;
-      insightHeadline = 'Well-Balanced Capsule';
-      insightBody = `Your ${ratio} Tops-to-Bottoms ratio gives strong versatile layering. Your most represented season is ${dominantSeason}.`;
-    }
-  }
 
   // Calendar calculations
   const year = viewDate.getFullYear();
@@ -482,18 +439,6 @@ export function StatsScreen({ items }: Props) {
         </View>
       </View>
 
-      {/* Stylist Insight Callout Card */}
-      <View style={styles.insightCard}>
-        <View style={styles.insightHeader}>
-          <View style={styles.insightSparkle}>
-            <Ionicons name="sparkles" size={13} color={c.gold} />
-          </View>
-          <Text style={styles.insightKicker}>CURATION INSIGHT</Text>
-        </View>
-        <Text style={styles.insightTitle}>{insightHeadline}</Text>
-        <Text style={styles.insightText}>{insightBody}</Text>
-      </View>
-
       {/* Most Worn Pieces / Wardrobe Utility */}
       {mostWornPieces.length > 0 && (
         <View style={styles.section}>
@@ -568,29 +513,6 @@ export function StatsScreen({ items }: Props) {
             );
           })}
         </View>
-      </View>
-
-      {/* Season Breakdown Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Seasonal Balance</Text>
-
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.seasonRowScroll}>
-          {([
-            { id: 'Spring', name: 'Spring', count: seasonCounts.Spring, icon: SEASON_ICONS.Spring, color: c.seasonSpring, bg: c.seasonSpringBg },
-            { id: 'Summer', name: 'Summer', count: seasonCounts.Summer, icon: SEASON_ICONS.Summer, color: c.seasonSummer, bg: c.seasonSummerBg },
-            { id: 'Fall', name: 'Fall', count: seasonCounts.Fall, icon: SEASON_ICONS.Fall, color: c.seasonFall, bg: c.seasonFallBg },
-            { id: 'Winter', name: 'Winter', count: seasonCounts.Winter, icon: SEASON_ICONS.Winter, color: c.seasonWinter, bg: c.seasonWinterBg },
-            { id: 'All-Season', name: 'All-Season', count: seasonCounts['All-Season'], icon: 'infinite', color: c.gold, bg: c.goldContainer },
-          ] as const).map((s) => (
-            <View key={s.id} style={styles.seasonCard}>
-              <View style={[styles.seasonIconWrap, { backgroundColor: s.bg }]}>
-                <Ionicons name={s.icon as keyof typeof Ionicons.glyphMap} size={17} color={s.color} />
-              </View>
-              <Text style={styles.seasonCardCount}>{s.count}</Text>
-              <Text style={styles.seasonCardName}>{s.name}</Text>
-            </View>
-          ))}
-        </ScrollView>
       </View>
 
       {/* Log Outfit Selection Modal */}
