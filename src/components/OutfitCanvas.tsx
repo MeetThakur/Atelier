@@ -16,7 +16,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { Category, ClothingCategory, Item, SavedOutfit } from '../types';
+import type { Category, Item, SavedOutfit } from '../types';
 import { categories } from '../constants';
 import { useTheme, fonts, shapes, type Palette } from '../theme';
 
@@ -38,7 +38,7 @@ type DraggablePieceProps = {
   onSelect: () => void;
   onRemove: () => void;
   onBringToFront: () => void;
-  onToggleScale: () => void;
+  onUpdateScale: (newScale: number) => void;
   palette: Palette;
 };
 
@@ -48,38 +48,86 @@ function DraggablePiece({
   onSelect,
   onRemove,
   onBringToFront,
-  onToggleScale,
+  onUpdateScale,
   palette,
 }: DraggablePieceProps) {
   const pan = useRef(new Animated.ValueXY({ x: data.initialX, y: data.initialY })).current;
   const lastOffset = useRef({ x: data.initialX, y: data.initialY });
 
+  // Two-finger pinch state tracking
+  const initialPinchDistRef = useRef<number | null>(null);
+  const initialScaleRef = useRef<number>(data.scale);
+  const isPinchingRef = useRef<boolean>(false);
+
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => false,
       onStartShouldSetPanResponderCapture: () => false,
-      onMoveShouldSetPanResponder: (_, gestureState) =>
-        Math.abs(gestureState.dx) > 3 || Math.abs(gestureState.dy) > 3,
-      onMoveShouldSetPanResponderCapture: (_, gestureState) =>
-        Math.abs(gestureState.dx) > 3 || Math.abs(gestureState.dy) > 3,
-      onPanResponderGrant: () => {
-        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        onSelect();
-        pan.setOffset({
-          x: lastOffset.current.x,
-          y: lastOffset.current.y,
-        });
-        pan.setValue({ x: 0, y: 0 });
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        const touches = evt.nativeEvent.touches;
+        if (touches && touches.length >= 2) return true;
+        return Math.abs(gestureState.dx) > 3 || Math.abs(gestureState.dy) > 3;
       },
-      onPanResponderMove: Animated.event([null, { dx: pan.x, dy: pan.y }], {
-        useNativeDriver: false,
-      }),
+      onMoveShouldSetPanResponderCapture: (evt, gestureState) => {
+        const touches = evt.nativeEvent.touches;
+        if (touches && touches.length >= 2) return true;
+        return Math.abs(gestureState.dx) > 3 || Math.abs(gestureState.dy) > 3;
+      },
+      onPanResponderGrant: (evt) => {
+        const touches = evt.nativeEvent.touches;
+        onSelect();
+
+        if (touches && touches.length >= 2) {
+          isPinchingRef.current = true;
+          const dist = Math.hypot(
+            touches[0].pageX - touches[1].pageX,
+            touches[0].pageY - touches[1].pageY
+          );
+          initialPinchDistRef.current = dist > 0 ? dist : 1;
+          initialScaleRef.current = data.scale;
+        } else {
+          isPinchingRef.current = false;
+          initialPinchDistRef.current = null;
+          pan.setOffset({
+            x: lastOffset.current.x,
+            y: lastOffset.current.y,
+          });
+          pan.setValue({ x: 0, y: 0 });
+        }
+      },
+      onPanResponderMove: (evt, gestureState) => {
+        const touches = evt.nativeEvent.touches;
+
+        if (touches && touches.length >= 2) {
+          // Two-finger Pinch to Enlarge / Scale!
+          const currentDist = Math.hypot(
+            touches[0].pageX - touches[1].pageX,
+            touches[0].pageY - touches[1].pageY
+          );
+
+          if (initialPinchDistRef.current && initialPinchDistRef.current > 0) {
+            const factor = currentDist / initialPinchDistRef.current;
+            const targetScale = Math.min(
+              Math.max(initialScaleRef.current * factor, 0.45),
+              2.6
+            );
+            onUpdateScale(targetScale);
+          }
+        } else if (!isPinchingRef.current) {
+          // Single-finger Pan to Drag
+          pan.setValue({ x: gestureState.dx, y: gestureState.dy });
+        }
+      },
       onPanResponderRelease: (_, gestureState) => {
-        pan.flattenOffset();
-        lastOffset.current = {
-          x: lastOffset.current.x + gestureState.dx,
-          y: lastOffset.current.y + gestureState.dy,
-        };
+        if (!isPinchingRef.current) {
+          pan.flattenOffset();
+          lastOffset.current = {
+            x: lastOffset.current.x + gestureState.dx,
+            y: lastOffset.current.y + gestureState.dy,
+          };
+        }
+        isPinchingRef.current = false;
+        initialPinchDistRef.current = null;
       },
     })
   ).current;
@@ -131,18 +179,6 @@ function DraggablePiece({
               style={[styles.miniControlBtn, { backgroundColor: palette.primary }]}
             >
               <Ionicons name="arrow-up" size={11} color={palette.onPrimary} />
-            </Pressable>
-
-            <Pressable
-              onPress={(e) => {
-                e.stopPropagation();
-                void Haptics.selectionAsync();
-                onToggleScale();
-              }}
-              hitSlop={10}
-              style={[styles.miniControlBtn, { backgroundColor: palette.primary }]}
-            >
-              <Ionicons name="resize-outline" size={11} color={palette.onPrimary} />
             </Pressable>
 
             <Pressable
@@ -230,13 +266,9 @@ export function OutfitCanvas({ items }: Props) {
     );
   };
 
-  const handleToggleScale = (instanceId: string) => {
+  const handleUpdateScale = (instanceId: string, newScale: number) => {
     setCanvasPieces((prev) =>
-      prev.map((p) => {
-        if (p.instanceId !== instanceId) return p;
-        const nextScale = p.scale === 1 ? 1.25 : p.scale === 1.25 ? 0.8 : 1;
-        return { ...p, scale: nextScale };
-      })
+      prev.map((p) => (p.instanceId === instanceId ? { ...p, scale: newScale } : p))
     );
   };
 
@@ -382,7 +414,7 @@ export function OutfitCanvas({ items }: Props) {
         <View style={styles.toolbarLeft}>
           <Text style={styles.canvasTitle}>Studio Canvas</Text>
           <Text style={styles.canvasSubtitle}>
-            {canvasPieces.length} {canvasPieces.length === 1 ? 'piece' : 'pieces'} floating
+            Pinch with two fingers to enlarge
           </Text>
         </View>
 
@@ -447,7 +479,7 @@ export function OutfitCanvas({ items }: Props) {
             </View>
             <Text style={styles.hintTitle}>Interactive Lookbook Studio</Text>
             <Text style={styles.hintText}>
-              Tap pieces from your wardrobe tray below to float cutouts freely on the canvas board.
+              Tap pieces below to add cutouts. Drag to position, and pinch with two fingers to enlarge.
             </Text>
           </View>
         ) : (
@@ -459,7 +491,7 @@ export function OutfitCanvas({ items }: Props) {
               onSelect={() => setSelectedInstanceId(piece.instanceId)}
               onRemove={() => handleRemovePiece(piece.instanceId)}
               onBringToFront={() => handleBringToFront(piece.instanceId)}
-              onToggleScale={() => handleToggleScale(piece.instanceId)}
+              onUpdateScale={(newScale) => handleUpdateScale(piece.instanceId, newScale)}
               palette={c}
             />
           ))
@@ -648,7 +680,7 @@ const styles = StyleSheet.create({
     top: -16,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
     zIndex: 999,
   },
   miniControlBtn: {
