@@ -84,6 +84,8 @@ export const ItemCard = memo(function ItemCard({
     onOpenMenu();
   };
 
+  const hasCustomName = item.name !== item.category;
+
   return (
     <Pressable
       onPress={handleTap}
@@ -93,11 +95,6 @@ export const ItemCard = memo(function ItemCard({
     >
       <View style={styles.imageWrap}>
         <Image source={{ uri: item.image }} style={styles.image} resizeMode="cover" />
-
-        {/* Minimal Glassmorphic Category Badge */}
-        <View style={styles.glassCategoryBadge}>
-          <Text style={styles.categoryText}>{item.category.toUpperCase()}</Text>
-        </View>
 
         {/* Double-tap Pop Animated Heart */}
         <Animated.View
@@ -127,9 +124,9 @@ export const ItemCard = memo(function ItemCard({
 
         <View style={styles.metaRow}>
           <Text style={styles.subCategory}>
-            {item.name !== item.category ? item.category : 'Piece'}
+            {hasCustomName ? item.category : item.season || 'All-Season'}
           </Text>
-          {item.season && item.season !== 'All-Season' && (
+          {hasCustomName && item.season && item.season !== 'All-Season' && (
             <View style={styles.seasonBadge}>
               <Ionicons
                 name={SEASON_ICONS[item.season] || 'sparkles-outline'}
@@ -177,21 +174,6 @@ const makeStyles = (c: Palette) =>
       width: '100%',
       height: '100%',
       backgroundColor: 'transparent',
-    },
-    glassCategoryBadge: {
-      position: 'absolute',
-      left: 10,
-      top: 10,
-      backgroundColor: 'rgba(18, 16, 14, 0.55)',
-      borderRadius: shapes.xs,
-      paddingHorizontal: 8,
-      paddingVertical: 3.5,
-    },
-    categoryText: {
-      fontFamily: fonts.bold,
-      color: '#FFFFFF',
-      fontSize: 9,
-      letterSpacing: 0.8,
     },
     animatedHeartWrap: {
       position: 'absolute',
