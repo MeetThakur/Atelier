@@ -84,6 +84,19 @@ export function useCloset() {
         };
       })
     );
+
+    // Sync to @atelier_daily_outfit_logs_v1 in storage
+    import('@react-native-async-storage/async-storage').then(({ default: AsyncStorage }) => {
+      AsyncStorage.getItem('@atelier_daily_outfit_logs_v1').then((raw) => {
+        const logs = raw ? JSON.parse(raw) : {};
+        const existing = logs[today] || { dateKey: today, pieceIds: [] };
+        if (!existing.pieceIds.includes(id)) {
+          existing.pieceIds = [...existing.pieceIds, id];
+        }
+        logs[today] = existing;
+        AsyncStorage.setItem('@atelier_daily_outfit_logs_v1', JSON.stringify(logs)).catch(() => {});
+      }).catch(() => {});
+    });
   }, []);
 
   return {

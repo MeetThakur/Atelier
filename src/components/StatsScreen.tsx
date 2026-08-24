@@ -70,7 +70,7 @@ export function StatsScreen({ items }: Props) {
   const [modalCategory, setModalCategory] = useState<string>('All');
   const [selectedPieceIds, setSelectedPieceIds] = useState<string[]>([]);
 
-  // Load saved outfits & daily logs on mount
+  // Load saved outfits & daily logs on mount & sync on items update
   useEffect(() => {
     AsyncStorage.getItem(OUTFITS_STORAGE_KEY)
       .then((data) => {
@@ -89,7 +89,25 @@ export function StatsScreen({ items }: Props) {
         }
       })
       .catch(() => {});
-  }, []);
+  }, [items]);
+
+  // Merged logs: combines explicit daily logs with any item marked as worn today
+  const mergedDailyLogs = useMemo(() => {
+    const combined: Record<string, DailyLogEntry> = { ...dailyLogs };
+    for (const item of items) {
+      if (item.lastWornDate) {
+        const dateKey = item.lastWornDate.split('T')[0];
+        const existing = combined[dateKey] || { dateKey, pieceIds: [] };
+        if (!existing.pieceIds.includes(item.id)) {
+          combined[dateKey] = {
+            ...existing,
+            pieceIds: [...existing.pieceIds, item.id],
+          };
+        }
+      }
+    }
+    return combined;
+  }, [dailyLogs, items]);
 
   const totalItems = items.length;
   const favoriteCount = items.filter((i) => i.favorite).length;
@@ -169,7 +187,7 @@ export function StatsScreen({ items }: Props) {
     setSelectedDateKey(formatDateKey(now));
   };
 
-  const selectedLog = dailyLogs[selectedDateKey];
+  const selectedLog = mergedDailyLogs[selectedDateKey];
   const selectedLoggedPieces = useMemo(() => {
     if (!selectedLog || !selectedLog.pieceIds) return [];
     return selectedLog.pieceIds
@@ -288,7 +306,9 @@ export function StatsScreen({ items }: Props) {
 
             const isSelected = cell.dateKey === selectedDateKey;
             const isToday = cell.dateKey === todayKey;
-            const hasLog = Boolean(dailyLogs[cell.dateKey]);
+            const hasLog = Boolean(
+              mergedDailyLogs[cell.dateKey] && mergedDailyLogs[cell.dateKey].pieceIds.length > 0
+            );
 
             return (
               <Pressable
