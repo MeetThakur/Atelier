@@ -30,6 +30,7 @@ import { AddItemModal } from './src/components/AddItemModal';
 import { OutfitCanvas } from './src/components/OutfitCanvas';
 import { StatsScreen } from './src/components/StatsScreen';
 import { BottomNavBar } from './src/components/BottomNavBar';
+import { BackupModal } from './src/components/BackupModal';
 import { useCloset } from './src/hooks/useCloset';
 import { greeting } from './src/lib/format';
 import { SEASON_ICONS } from './src/constants';
@@ -74,6 +75,7 @@ function AtelierApp() {
     removeItem,
     updateItem,
     logWorn,
+    reloadItems,
   } = useCloset();
 
   const [activeTab, setActiveTab] = useState<AppTab>('archive');
@@ -84,6 +86,7 @@ function AtelierApp() {
   const [modalOpen, setModalOpen] = useState(false);
   const [filterModalOpen, setFilterModalOpen] = useState(false);
   const [sortModalOpen, setSortModalOpen] = useState(false);
+  const [backupModalOpen, setBackupModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
   const [actionSheetItem, setActionSheetItem] = useState<Item | null>(null);
   const [sortMode, setSortMode] = useState<SortMode>('newest');
@@ -224,6 +227,7 @@ function AtelierApp() {
                     return !open;
                   });
                 }}
+                onOpenBackup={() => setBackupModalOpen(true)}
               />
 
               {searchOpen && <SearchBar value={query} onChange={setQuery} />}
@@ -446,6 +450,14 @@ function AtelierApp() {
         onToggleFavorite={toggleFavorite}
         onRemove={removeItem}
         onOpenDetails={(item: Item) => setSelectedItem(item)}
+      />
+
+      <BackupModal
+        visible={backupModalOpen}
+        onClose={() => setBackupModalOpen(false)}
+        onRestoreSuccess={() => {
+          void reloadItems();
+        }}
       />
     </SafeAreaView>
   );
@@ -721,7 +733,7 @@ const makeStyles = (c: Palette) =>
       justifyContent: 'center',
     },
     optIconWrapActive: {
-      backgroundColor: '#FFFFFF',
+      backgroundColor: c.goldContainer,
     },
     optTextCol: {
       flex: 1,

@@ -3,7 +3,7 @@ import { Animated, Image, Pressable, StyleSheet, Text, View } from 'react-native
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import type { ClothingCategory, Item } from '../types';
-import { useTheme, fonts, shapes, type Palette } from '../theme';
+import { useTheme, fonts, type Palette } from '../theme';
 
 type Props = {
   item: Item;
@@ -94,6 +94,9 @@ export const ItemCard = memo(function ItemCard({
 
   return (
     <Pressable
+      accessibilityLabel={`Clothing piece: ${displayName}, category ${item.category}${item.favorite ? ', marked as favorite' : ''}`}
+      accessibilityRole="button"
+      accessibilityHint="Double tap to toggle favorite. Long press for quick actions. Tap to view full details."
       onPress={handleCardPress}
       onLongPress={handleLongPress}
       delayLongPress={350}

@@ -5,6 +5,10 @@ export const STORAGE_KEY = 'closet.items.v1';
 
 export const OUTFITS_STORAGE_KEY = '@atelier_saved_outfits_v1';
 
+export const DAILY_LOGS_STORAGE_KEY = '@atelier_daily_outfit_logs_v1';
+
+export const THEME_STORAGE_KEY = '@atelier_theme_mode';
+
 export const categories: Category[] = ['All', 'Tops', 'Bottoms', 'Dresses', 'Shoes', 'Accessories'];
 export const clothingCategories: ClothingCategory[] = ['Tops', 'Bottoms', 'Dresses', 'Shoes', 'Accessories'];
 

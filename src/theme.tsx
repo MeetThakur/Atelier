@@ -1,8 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useColorScheme } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const THEME_STORAGE_KEY = '@atelier_theme_mode';
+import { THEME_STORAGE_KEY } from './constants';
 
 export const fonts = {
   regular: 'PlusJakartaSans_400Regular',

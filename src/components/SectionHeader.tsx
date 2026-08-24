@@ -315,7 +315,7 @@ const makeStyles = (c: Palette) =>
       justifyContent: 'center',
     },
     optIconWrapActive: {
-      backgroundColor: '#FFFFFF',
+      backgroundColor: c.goldContainer,
     },
     optTextCol: {
       flex: 1,

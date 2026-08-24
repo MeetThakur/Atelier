@@ -39,3 +39,17 @@ export type NewItemDraft = {
   category: ClothingCategory;
   season?: Season;
 };
+
+export type DailyLogEntry = {
+  dateKey: string;
+  pieceIds: string[];
+  outfitName?: string;
+};
+
+export type WardrobeBackup = {
+  version: 1;
+  exportedAt: string;
+  items: Item[];
+  outfits: SavedOutfit[];
+  dailyLogs: Record<string, DailyLogEntry>;
+};

@@ -24,8 +24,11 @@ export function BottomNavBar({ activeTab, onTabChange }: Props) {
 
   return (
     <View style={styles.dockWrap} pointerEvents="box-none">
-      <View style={styles.navPill}>
+      <View style={styles.navPill} accessibilityRole="tablist">
         <Pressable
+          accessibilityLabel="Archive Tab: View clothing pieces"
+          accessibilityRole="tab"
+          accessibilityState={{ selected: activeTab === 'archive' }}
           onPress={() => handleTab('archive')}
           style={({ pressed }) => [
             styles.tabItem,
@@ -49,6 +52,9 @@ export function BottomNavBar({ activeTab, onTabChange }: Props) {
         </Pressable>
 
         <Pressable
+          accessibilityLabel="Studio Tab: Compose styled outfits"
+          accessibilityRole="tab"
+          accessibilityState={{ selected: activeTab === 'canvas' }}
           onPress={() => handleTab('canvas')}
           style={({ pressed }) => [
             styles.tabItem,
@@ -72,6 +78,9 @@ export function BottomNavBar({ activeTab, onTabChange }: Props) {
         </Pressable>
 
         <Pressable
+          accessibilityLabel="Stats Tab: View wardrobe analytics & wear history"
+          accessibilityRole="tab"
+          accessibilityState={{ selected: activeTab === 'stats' }}
           onPress={() => handleTab('stats')}
           style={({ pressed }) => [
             styles.tabItem,

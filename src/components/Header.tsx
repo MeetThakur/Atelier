@@ -1,16 +1,22 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { useTheme, useThemeMode, fonts, shapes, type Palette } from '../theme';
+import { useTheme, useThemeMode, fonts, type Palette } from '../theme';
 
 type Props = {
   greeting?: string;
   totalPieces?: number | null;
   searchActive: boolean;
   onToggleSearch: () => void;
+  onOpenBackup?: () => void;
 };
 
-export function Header({ totalPieces, searchActive, onToggleSearch }: Props) {
+export function Header({
+  totalPieces,
+  searchActive,
+  onToggleSearch,
+  onOpenBackup,
+}: Props) {
   const c = useTheme();
   const { isDark, toggleTheme } = useThemeMode();
   const styles = makeStyles(c);
@@ -37,14 +43,30 @@ export function Header({ totalPieces, searchActive, onToggleSearch }: Props) {
       </View>
 
       <View style={styles.actionsRow}>
+        {onOpenBackup && (
+          <Pressable
+            accessibilityLabel="Open wardrobe backup & sync"
+            accessibilityRole="button"
+            onPress={() => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              onOpenBackup();
+            }}
+            hitSlop={8}
+            style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
+          >
+            <Ionicons name="cloud-outline" size={18} color={c.onSurface} />
+          </Pressable>
+        )}
+
         <Pressable
           accessibilityLabel={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          accessibilityRole="button"
           onPress={handleThemeToggle}
           hitSlop={8}
           style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
         >
           <Ionicons
-            name={isDark ? 'sunny-outline' : 'sunny-outline'}
+            name={isDark ? 'sunny-outline' : 'moon-outline'}
             size={18}
             color={c.onSurface}
           />
@@ -52,6 +74,7 @@ export function Header({ totalPieces, searchActive, onToggleSearch }: Props) {
 
         <Pressable
           accessibilityLabel="Search archive"
+          accessibilityRole="button"
           onPress={handleSearchToggle}
           hitSlop={8}
           style={({ pressed }) => [
@@ -108,7 +131,7 @@ const makeStyles = (c: Palette) =>
       width: 40,
       height: 40,
       borderRadius: 20,
-      backgroundColor: c.cardBg,
+      backgroundColor: c.surfaceVariant,
       borderWidth: 1,
       borderColor: c.outlineVariant,
       alignItems: 'center',
