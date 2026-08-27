@@ -38,14 +38,14 @@ export function LogWearModal({
   visible,
   selectedDateKey,
   items,
-  initialPieceIds,
+  initialPieceIds = [],
   onClose,
   onSave,
 }: Props) {
   const c = useTheme();
   const styles = makeStyles(c);
 
-  const [selectedPieceIds, setSelectedPieceIds] = useState<string[]>(initialPieceIds);
+  const [selectedPieceIds, setSelectedPieceIds] = useState<string[]>(initialPieceIds || []);
   const [modalCategory, setModalCategory] = useState<Category>('All');
 
   const handleTogglePiece = (pieceId: string) => {
@@ -53,6 +53,11 @@ export function LogWearModal({
     setSelectedPieceIds((prev) =>
       prev.includes(pieceId) ? prev.filter((id) => id !== pieceId) : [...prev, pieceId]
     );
+  };
+
+  const handleClearSelection = () => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSelectedPieceIds([]);
   };
 
   const handleSave = () => {
@@ -171,9 +176,21 @@ export function LogWearModal({
 
           {/* Footer Actions */}
           <View style={styles.modalFooter}>
-            <Text style={styles.selectedCountText}>
-              {selectedPieceIds.length} {selectedPieceIds.length === 1 ? 'piece' : 'pieces'} selected
-            </Text>
+            <View style={styles.selectedCountRow}>
+              <Text style={styles.selectedCountText}>
+                {selectedPieceIds.length} {selectedPieceIds.length === 1 ? 'piece' : 'pieces'} selected
+              </Text>
+              {selectedPieceIds.length > 0 && (
+                <Pressable
+                  accessibilityLabel="Deselect all pieces"
+                  accessibilityRole="button"
+                  onPress={handleClearSelection}
+                  hitSlop={8}
+                >
+                  <Text style={styles.clearSelectionText}>Deselect all</Text>
+                </Pressable>
+              )}
+            </View>
             <View style={styles.footerBtnRow}>
               <Pressable
                 accessibilityLabel="Cancel logging"
@@ -330,10 +347,18 @@ function makeStyles(c: Palette) {
       borderTopWidth: 1,
       borderTopColor: c.outlineVariant,
     },
+    selectedCountRow: {
+      gap: 2,
+    },
     selectedCountText: {
       fontFamily: fonts.medium,
       fontSize: 13,
       color: c.onSurfaceVariant,
+    },
+    clearSelectionText: {
+      fontFamily: fonts.semiBold,
+      fontSize: 11,
+      color: c.gold,
     },
     footerBtnRow: {
       flexDirection: 'row',

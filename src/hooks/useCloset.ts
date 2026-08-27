@@ -118,6 +118,8 @@ export function useCloset() {
             return {
               ...item,
               wearCount: Math.max(0, currentCount - 1),
+              lastWornDate:
+                item.lastWornDate === dateKey ? undefined : item.lastWornDate,
             };
           }
           return item;

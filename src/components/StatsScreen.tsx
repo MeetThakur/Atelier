@@ -41,51 +41,27 @@ export function StatsScreen({ items, onSyncDailyWear }: Props) {
   const [selectedDateKey, setSelectedDateKey] = useState(() => formatDateKey(new Date()));
   const [logModalOpen, setLogModalOpen] = useState(false);
 
-  // Load daily logs from storage
+  // Load daily logs from storage on mount
   useEffect(() => {
     loadDailyLogs()
       .then(setDailyLogs)
       .catch(() => {});
-  }, [items]);
+  }, []);
 
-  // Merged logs: combines explicit daily logs with any item marked as worn today
-  const mergedDailyLogs = useMemo(() => {
-    const combined: Record<string, DailyLogEntry> = { ...dailyLogs };
-    for (const item of items) {
-      if (item.lastWornDate) {
-        const dateKey = item.lastWornDate.split('T')[0];
-        const existing = combined[dateKey] || { dateKey, pieceIds: [] };
-        if (!existing.pieceIds.includes(item.id)) {
-          combined[dateKey] = {
-            ...existing,
-            pieceIds: [...existing.pieceIds, item.id],
-          };
-        }
-      }
-    }
-    return combined;
-  }, [dailyLogs, items]);
-
-  // Dynamically compute effective wear counts across both daily logs & item wearCount
+  // Dynamically compute effective wear counts directly from dailyLogs
   const itemWearCounts = useMemo(() => {
     const counts: Record<string, number> = {};
 
-    for (const log of Object.values(mergedDailyLogs)) {
-      if (log.pieceIds && Array.isArray(log.pieceIds)) {
+    for (const log of Object.values(dailyLogs)) {
+      if (log && log.pieceIds && Array.isArray(log.pieceIds)) {
         for (const pieceId of log.pieceIds) {
           counts[pieceId] = (counts[pieceId] || 0) + 1;
         }
       }
     }
 
-    for (const item of items) {
-      const fromLogs = counts[item.id] || 0;
-      const baseCount = item.wearCount || 0;
-      counts[item.id] = Math.max(fromLogs, baseCount);
-    }
-
     return counts;
-  }, [mergedDailyLogs, items]);
+  }, [dailyLogs]);
 
   const totalItems = items.length;
   const favoriteCount = items.filter((i) => i.favorite).length;
@@ -229,7 +205,7 @@ export function StatsScreen({ items, onSyncDailyWear }: Props) {
       <WearCalendar
         viewDate={viewDate}
         selectedDateKey={selectedDateKey}
-        mergedDailyLogs={mergedDailyLogs}
+        mergedDailyLogs={dailyLogs}
         items={items}
         onPrevMonth={handlePrevMonth}
         onNextMonth={handleNextMonth}
@@ -303,10 +279,11 @@ export function StatsScreen({ items, onSyncDailyWear }: Props) {
 
       {/* Log Wear Modal */}
       <LogWearModal
+        key={`log-modal-${selectedDateKey}-${logModalOpen}`}
         visible={logModalOpen}
         selectedDateKey={selectedDateKey}
         items={items}
-        initialPieceIds={mergedDailyLogs[selectedDateKey]?.pieceIds || []}
+        initialPieceIds={dailyLogs[selectedDateKey]?.pieceIds || []}
         onClose={() => setLogModalOpen(false)}
         onSave={handleSaveDailyLog}
       />
