@@ -1,7 +1,9 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme, useThemeMode, fonts, type Palette } from '../theme';
+
+const APP_ICON = require('../../assets/icon.png');
 
 type Props = {
   greeting?: string;
@@ -34,7 +36,10 @@ export function Header({
   return (
     <View style={styles.header}>
       <View style={styles.leftCol}>
-        <Text style={styles.title}>Atelier</Text>
+        <View style={styles.titleRow}>
+          <Image source={APP_ICON} style={styles.logoBadge} resizeMode="cover" />
+          <Text style={styles.title}>Atelier</Text>
+        </View>
         {totalPieces !== null && totalPieces !== undefined && (
           <Text style={styles.subtitle}>
             {totalPieces} {totalPieces === 1 ? 'piece' : 'pieces'} curated
@@ -107,10 +112,22 @@ const makeStyles = (c: Palette) =>
     leftCol: {
       flex: 1,
     },
+    titleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    logoBadge: {
+      width: 28,
+      height: 28,
+      borderRadius: 7,
+      borderWidth: 1,
+      borderColor: c.outlineVariant,
+    },
     title: {
       fontFamily: fonts.displayBold,
       color: c.onSurface,
-      fontSize: 32,
+      fontSize: 30,
       letterSpacing: -0.6,
       includeFontPadding: false,
     },
