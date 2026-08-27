@@ -7,9 +7,10 @@ import type { WardrobeInsight } from './statsTypes';
 
 type Props = {
   items: Item[];
+  itemWearCounts?: Record<string, number>;
 };
 
-export function CapsuleInsights({ items }: Props) {
+export function CapsuleInsights({ items, itemWearCounts }: Props) {
   const c = useTheme();
   const styles = makeStyles(c);
 
@@ -22,7 +23,10 @@ export function CapsuleInsights({ items }: Props) {
     const shoes = items.filter((i) => i.category === 'Shoes').length;
     const dresses = items.filter((i) => i.category === 'Dresses').length;
     const favorites = items.filter((i) => i.favorite).length;
-    const unworn = items.filter((i) => !i.wearCount || i.wearCount === 0).length;
+    const unworn = items.filter((i) => {
+      const count = itemWearCounts ? itemWearCounts[i.id] : i.wearCount;
+      return !count || count === 0;
+    }).length;
 
     // Capsule Balance Rule
     if (tops > 0 && bottoms > 0) {
@@ -106,7 +110,7 @@ export function CapsuleInsights({ items }: Props) {
     }
 
     return list;
-  }, [items]);
+  }, [items, itemWearCounts]);
 
   if (insights.length === 0) return null;
 

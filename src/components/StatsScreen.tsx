@@ -18,6 +18,11 @@ import { LogWearModal } from './stats/LogWearModal';
 
 type Props = {
   items: Item[];
+  onSyncDailyWear?: (
+    dateKey: string,
+    newPieceIds: string[],
+    prevPieceIds: string[]
+  ) => void;
 };
 
 function formatDateKey(d: Date): string {
@@ -27,7 +32,7 @@ function formatDateKey(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-export function StatsScreen({ items }: Props) {
+export function StatsScreen({ items, onSyncDailyWear }: Props) {
   const c = useTheme();
   const styles = makeStyles(c);
 
@@ -61,18 +66,46 @@ export function StatsScreen({ items }: Props) {
     return combined;
   }, [dailyLogs, items]);
 
+  // Dynamically compute effective wear counts across both daily logs & item wearCount
+  const itemWearCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+
+    for (const log of Object.values(mergedDailyLogs)) {
+      if (log.pieceIds && Array.isArray(log.pieceIds)) {
+        for (const pieceId of log.pieceIds) {
+          counts[pieceId] = (counts[pieceId] || 0) + 1;
+        }
+      }
+    }
+
+    for (const item of items) {
+      const fromLogs = counts[item.id] || 0;
+      const baseCount = item.wearCount || 0;
+      counts[item.id] = Math.max(fromLogs, baseCount);
+    }
+
+    return counts;
+  }, [mergedDailyLogs, items]);
+
   const totalItems = items.length;
   const favoriteCount = items.filter((i) => i.favorite).length;
   const favoritePercent = totalItems > 0 ? Math.round((favoriteCount / totalItems) * 100) : 0;
 
   // Wear Log Metrics
-  const totalWears = items.reduce((acc, item) => acc + (item.wearCount || 0), 0);
+  const totalWears = useMemo(() => {
+    return Object.values(itemWearCounts).reduce((acc, count) => acc + count, 0);
+  }, [itemWearCounts]);
+
   const mostWornPieces = useMemo(() => {
-    return [...items]
-      .filter((i) => (i.wearCount || 0) > 0)
-      .sort((a, b) => (b.wearCount || 0) - (a.wearCount || 0))
+    return items
+      .map((piece) => ({
+        ...piece,
+        effectiveWearCount: itemWearCounts[piece.id] || 0,
+      }))
+      .filter((piece) => piece.effectiveWearCount > 0)
+      .sort((a, b) => b.effectiveWearCount - a.effectiveWearCount)
       .slice(0, 4);
-  }, [items]);
+  }, [items, itemWearCounts]);
 
   const topsCount = items.filter((i) => i.category === 'Tops').length;
   const bottomsCount = items.filter((i) => i.category === 'Bottoms').length;
@@ -100,6 +133,9 @@ export function StatsScreen({ items }: Props) {
   };
 
   const handleSaveDailyLog = (pieceIds: string[]) => {
+    const prevLog = dailyLogs[selectedDateKey];
+    const prevPieceIds = prevLog?.pieceIds || [];
+
     const updated = { ...dailyLogs };
     if (pieceIds.length > 0) {
       updated[selectedDateKey] = {
@@ -111,14 +147,25 @@ export function StatsScreen({ items }: Props) {
     }
     setDailyLogs(updated);
     void saveDailyLogs(updated);
+
+    if (onSyncDailyWear) {
+      onSyncDailyWear(selectedDateKey, pieceIds, prevPieceIds);
+    }
   };
 
   const handleRemoveLog = () => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const prevLog = dailyLogs[selectedDateKey];
+    const prevPieceIds = prevLog?.pieceIds || [];
+
     const updated = { ...dailyLogs };
     delete updated[selectedDateKey];
     setDailyLogs(updated);
     void saveDailyLogs(updated);
+
+    if (onSyncDailyWear) {
+      onSyncDailyWear(selectedDateKey, [], prevPieceIds);
+    }
   };
 
   return (
@@ -201,7 +248,9 @@ export function StatsScreen({ items }: Props) {
                   {piece.name}
                 </Text>
                 <View style={styles.wearBadge}>
-                  <Text style={styles.wearBadgeText}>{piece.wearCount}x worn</Text>
+                  <Text style={styles.wearBadgeText}>
+                    {piece.effectiveWearCount}x worn
+                  </Text>
                 </View>
               </View>
             ))}
@@ -227,7 +276,7 @@ export function StatsScreen({ items }: Props) {
       <CategoryBreakdown items={items} />
 
       {/* Stylist Insights */}
-      <CapsuleInsights items={items} />
+      <CapsuleInsights items={items} itemWearCounts={itemWearCounts} />
 
       {/* Log Wear Modal */}
       <LogWearModal

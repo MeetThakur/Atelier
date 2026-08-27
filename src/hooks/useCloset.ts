@@ -96,6 +96,37 @@ export function useCloset() {
     }).catch(() => {});
   }, []);
 
+  const syncDailyLogWears = useCallback(
+    (dateKey: string, newPieceIds: string[], prevPieceIds: string[] = []) => {
+      setItems((current) =>
+        current.map((item) => {
+          const wasInPrev = prevPieceIds.includes(item.id);
+          const isInNew = newPieceIds.includes(item.id);
+
+          if (!wasInPrev && isInNew) {
+            const currentCount = item.wearCount || 0;
+            return {
+              ...item,
+              wearCount: currentCount + 1,
+              lastWornDate:
+                item.lastWornDate && item.lastWornDate > dateKey
+                  ? item.lastWornDate
+                  : dateKey,
+            };
+          } else if (wasInPrev && !isInNew) {
+            const currentCount = item.wearCount || 0;
+            return {
+              ...item,
+              wearCount: Math.max(0, currentCount - 1),
+            };
+          }
+          return item;
+        })
+      );
+    },
+    []
+  );
+
   const reloadItems = useCallback(async () => {
     try {
       const loadedList = await loadItems();
@@ -112,6 +143,7 @@ export function useCloset() {
     removeItem,
     updateItem,
     logWorn,
+    syncDailyLogWears,
     reloadItems,
   };
 }

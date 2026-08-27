@@ -75,6 +75,7 @@ function AtelierApp() {
     removeItem,
     updateItem,
     logWorn,
+    syncDailyLogWears,
     reloadItems,
   } = useCloset();
 
@@ -353,7 +354,12 @@ function AtelierApp() {
 
         {activeTab === 'canvas' && <OutfitCanvas items={items} />}
 
-        {activeTab === 'stats' && <StatsScreen items={items} />}
+        {activeTab === 'stats' && (
+          <StatsScreen
+            items={items}
+            onSyncDailyWear={syncDailyLogWears}
+          />
+        )}
       </Animated.View>
 
       {/* Floating Bottom Nav */}

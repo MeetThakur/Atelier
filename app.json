@@ -10,7 +10,7 @@
       "package": "com.atelier.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#FAF8F5"
+        "backgroundColor": "#0A0A0C"
       }
     },
     "plugins": [
@@ -19,10 +19,11 @@
         {
           "image": "./assets/splash-icon.png",
           "imageWidth": 160,
-          "backgroundColor": "#FAF8F5"
+          "backgroundColor": "#0A0A0C"
         }
       ],
-      "expo-font"
+      "expo-font",
+      "expo-sharing"
     ]
   }
 }
