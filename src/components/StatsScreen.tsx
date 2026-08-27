@@ -225,39 +225,6 @@ export function StatsScreen({ items, onSyncDailyWear }: Props) {
         </View>
       </View>
 
-      {/* Most Worn Pieces Spotlight */}
-      {mostWornPieces.length > 0 && (
-        <View style={styles.spotlightCard}>
-          <View style={styles.spotlightHeader}>
-            <View>
-              <Text style={styles.spotlightTitle}>Most Worn Staples</Text>
-              <Text style={styles.spotlightSubtitle}>Your highest rotation wardrobe pieces</Text>
-            </View>
-            <Ionicons name="flame-outline" size={20} color={c.gold} />
-          </View>
-
-          <View style={styles.spotlightRow}>
-            {mostWornPieces.map((piece) => (
-              <View key={piece.id} style={styles.stapleCard}>
-                <Image
-                  source={{ uri: piece.image }}
-                  style={styles.stapleImg}
-                  resizeMode="contain"
-                />
-                <Text style={styles.stapleName} numberOfLines={1}>
-                  {piece.name}
-                </Text>
-                <View style={styles.wearBadge}>
-                  <Text style={styles.wearBadgeText}>
-                    {piece.effectiveWearCount}x worn
-                  </Text>
-                </View>
-              </View>
-            ))}
-          </View>
-        </View>
-      )}
-
       {/* Monthly Wear Calendar */}
       <WearCalendar
         viewDate={viewDate}
@@ -271,6 +238,62 @@ export function StatsScreen({ items, onSyncDailyWear }: Props) {
         onOpenLogModal={() => setLogModalOpen(true)}
         onRemoveLog={handleRemoveLog}
       />
+
+      {/* Most Worn Pieces Spotlight (Below Calendar) */}
+      {mostWornPieces.length > 0 && (
+        <View style={styles.spotlightCard}>
+          <View style={styles.spotlightHeader}>
+            <View>
+              <View style={styles.spotlightKickerRow}>
+                <Text style={styles.spotlightKicker}>ROTATION LEADERBOARD</Text>
+                <View style={styles.spotlightKickerDot} />
+              </View>
+              <Text style={styles.spotlightTitle}>Most Worn Staples</Text>
+              <Text style={styles.spotlightSubtitle}>
+                Your core high-rotation wardrobe foundation
+              </Text>
+            </View>
+            <View style={styles.spotlightIconWrap}>
+              <Ionicons name="flame" size={18} color={c.gold} />
+            </View>
+          </View>
+
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.spotlightScroll}
+          >
+            {mostWornPieces.map((piece, index) => (
+              <View key={piece.id} style={styles.stapleCard}>
+                {/* Image Pedestal */}
+                <View style={styles.stapleImgWrap}>
+                  <View style={styles.rankBadge}>
+                    <Text style={styles.rankBadgeText}>#{index + 1}</Text>
+                  </View>
+                  <Image
+                    source={{ uri: piece.image }}
+                    style={styles.stapleImg}
+                    resizeMode="contain"
+                  />
+                </View>
+
+                {/* Info & Wear Frequency */}
+                <Text style={styles.stapleName} numberOfLines={1}>
+                  {piece.name}
+                </Text>
+                <Text style={styles.stapleCategory}>{piece.category}</Text>
+
+                <View style={styles.wearBadge}>
+                  <Ionicons name="repeat" size={11} color={c.gold} />
+                  <Text style={styles.wearBadgeText}>
+                    {piece.effectiveWearCount} {piece.effectiveWearCount === 1 ? 'wear' : 'wears'}
+                  </Text>
+                </View>
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+      )}
 
       {/* Category & Seasonal Breakdown */}
       <CategoryBreakdown items={items} />
@@ -381,13 +404,32 @@ function makeStyles(c: Palette) {
     spotlightHeader: {
       flexDirection: 'row',
       justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      marginBottom: 16,
+    },
+    spotlightKickerRow: {
+      flexDirection: 'row',
       alignItems: 'center',
-      marginBottom: 14,
+      gap: 6,
+      marginBottom: 4,
+    },
+    spotlightKicker: {
+      fontFamily: fonts.bold,
+      fontSize: 10,
+      letterSpacing: 1.2,
+      color: c.gold,
+    },
+    spotlightKickerDot: {
+      width: 4,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: c.gold,
     },
     spotlightTitle: {
       fontFamily: fonts.displaySemiBold,
       fontSize: 18,
       color: c.onSurface,
+      letterSpacing: -0.3,
     },
     spotlightSubtitle: {
       fontFamily: fonts.regular,
@@ -395,35 +437,85 @@ function makeStyles(c: Palette) {
       color: c.onSurfaceVariant,
       marginTop: 2,
     },
-    spotlightRow: {
-      flexDirection: 'row',
-      gap: 10,
+    spotlightIconWrap: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: c.goldContainer,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: c.outlineVariant,
+    },
+    spotlightScroll: {
+      gap: 12,
+      paddingVertical: 2,
     },
     stapleCard: {
-      flex: 1,
-      alignItems: 'center',
+      width: 128,
       backgroundColor: c.surfaceVariant,
-      borderRadius: shapes.md,
+      borderRadius: shapes.lg,
       padding: 8,
+      borderWidth: 1,
+      borderColor: c.outlineVariant,
     },
-    stapleImg: {
+    stapleImgWrap: {
       width: '100%',
-      height: 64,
-      borderRadius: shapes.xs,
+      height: 110,
+      backgroundColor: c.surface,
+      borderRadius: shapes.md,
+      alignItems: 'center',
+      justifyContent: 'center',
+      position: 'relative',
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: c.outlineVariant,
     },
-    stapleName: {
-      fontFamily: fonts.medium,
-      fontSize: 11,
-      color: c.onSurface,
-      marginTop: 6,
-      textAlign: 'center',
-    },
-    wearBadge: {
+    rankBadge: {
+      position: 'absolute',
+      top: 6,
+      left: 6,
+      backgroundColor: c.goldContainer,
       paddingHorizontal: 6,
       paddingVertical: 2,
       borderRadius: shapes.full,
+      zIndex: 2,
+      borderWidth: 1,
+      borderColor: c.outlineVariant,
+    },
+    rankBadgeText: {
+      fontFamily: fonts.bold,
+      fontSize: 9,
+      color: c.gold,
+    },
+    stapleImg: {
+      width: '85%',
+      height: '85%',
+    },
+    stapleName: {
+      fontFamily: fonts.semiBold,
+      fontSize: 12,
+      color: c.onSurface,
+      marginTop: 8,
+      textAlign: 'center',
+    },
+    stapleCategory: {
+      fontFamily: fonts.regular,
+      fontSize: 10,
+      color: c.onSurfaceVariant,
+      textAlign: 'center',
+      marginTop: 1,
+    },
+    wearBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 4,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: shapes.full,
       backgroundColor: c.goldContainer,
-      marginTop: 4,
+      marginTop: 8,
     },
     wearBadgeText: {
       fontFamily: fonts.bold,
