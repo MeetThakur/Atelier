@@ -45,7 +45,7 @@ jobs:
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: kloset-release-${{ github.run_number }}
+          name: atelier-release-${{ github.run_number }}
           path: android/app/build/outputs/apk/release/app-release.apk
           retention-days: 30
           if-no-files-found: error
